@@ -26,5 +26,6 @@ public class TestaGeradorDeCodigoC {
         codigo_c.visit(tree);
 
         System.out.println(codigo_c);
+
     }
 }
