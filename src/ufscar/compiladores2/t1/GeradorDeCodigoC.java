@@ -1,12 +1,11 @@
 package ufscar.compiladores2.t1;
 
-
+import java.util.List;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
  * Created by marcelodeoliveiradasilva on 19/11/16.
  */
-
 
 
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
@@ -258,7 +257,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitCmd(LAParser.CmdContext ctx) {
         if (ctx != null) {
-            //codigo_c.println("cmd " + ctx.tipoCmd);
 
             // Tratar leia, escreva, se, entao, senao, caso, faca, enquanto
 
@@ -348,23 +346,29 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     }
 
     @Override
-    public String visitIdentificador(LAParser.IdentificadorContext ctx) {
-        return "";
-    }
-
-    @Override
     public String visitPonteiros_opcionais(LAParser.Ponteiros_opcionaisContext ctx) {
+        this.codigo_c.print(ctx.ponteiros/*.replace("^", "*")*/ + " ");
         return "";
     }
 
     @Override
     public String visitOutros_ident(LAParser.Outros_identContext ctx) {
-        return "";
+        List<TerminalNode> idents = ctx.IDENT();
+        List<LAParser.DimensaoContext> dims = ctx.dimensao();
+        String o_idents = "";
+        for (int i = 0; i < idents.size(); i++) {
+            o_idents += "." + idents.get(i).getText() + visitDimensao(dims.get(i));
+        }
+        return o_idents;
     }
 
     @Override
     public String visitDimensao(LAParser.DimensaoContext ctx) {
-        return "";
+        String dim = "";
+//        for(LAParser.Exp_aritmeticaContext exp : ctx.exp_aritmetica()) {
+//            dim += "[" + visitExp_aritmetica(exp) + "]";
+//        }
+        return dim;
     }
 
     @Override
@@ -373,22 +377,27 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     }
 
     @Override
-    public String visitMais_ident(LAParser.Mais_identContext ctx) {
-        return "";
-    }
+    public String visitMais_ident(LAParser.Mais_identContext ctx) { return ""; }
 
     @Override
     public String visitTipo_basico(LAParser.Tipo_basicoContext ctx) {
+        if(ctx.tipodado.equals("literal"))
+            this.codigo_c.print("char*");
+        else
+            this.codigo_c.print(getTipoDeDadoEmC(ctx.tipodado));
         return "";
     }
 
     @Override
     public String visitTipo_basico_ident(LAParser.Tipo_basico_identContext ctx) {
+        visitTipo_basico(ctx.tipo_basico());
         return "";
     }
 
     @Override
     public String visitTipo_estendido(LAParser.Tipo_estendidoContext ctx) {
+        visitTipo_basico_ident(ctx.tipo_basico_ident());
+        visitPonteiros_opcionais(ctx.ponteiros_opcionais());
         return "";
     }
 
@@ -414,16 +423,23 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParametros_opcional(LAParser.Parametros_opcionalContext ctx) {
+        if(ctx.parametro() != null)
+            visitParametro(ctx.parametro());
         return "";
     }
 
     @Override
     public String visitParametro(LAParser.ParametroContext ctx) {
+        visitTipo_estendido(ctx.tipo_estendido());
+        visitIdent_param(ctx.ident_param());
         return "";
     }
 
     @Override
     public String visitIdent_param(LAParser.Ident_paramContext ctx) {
+
+//        visitPonteiros_opcionais(ctx.ponteiros_opcionais());
+//        this.codigo_c.print(ctx.IDENT().getText() + visitDimensao(ctx.dimensao()) + visitOutros_ident(ctx.outros_ident()));
         return "";
     }
 
@@ -454,31 +470,40 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitChamada(LAParser.ChamadaContext ctx) {
+        this.codigo_c.print("(");
+        visitArgumentos_opcional(ctx.argumentos_opcional());
+        this.codigo_c.print(")");
         return "";
     }
 
     @Override
     public String visitAtribuicao(LAParser.AtribuicaoContext ctx) {
+        //this.codigo_c.print(visitOutros_ident(ctx.outros_ident()) + visitDimensao(ctx.dimensao()) + " = " + visitExpressao(ctx.expressao()));
         return "";
     }
 
     @Override
     public String visitArgumentos_opcional(LAParser.Argumentos_opcionalContext ctx) {
+        //this.codigo_c.print(visitExpressao(ctx.expressao()) + visitMais_expressao(ctx.mais_expressao()));
         return "";
     }
 
     @Override
     public String visitSelecao(LAParser.SelecaoContext ctx) {
-        this.codigo_c.print("entrei no if");
+        this.codigo_c.print("case " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
 
-        if (ctx.mais_selecao() != null) {
-//            for (LAParser.Mais_selecaoContext a: ctx.mais_selecao())
-        }
+        List<LAParser.CmdContext> cmds = ctx.comandos().cmd();
+        for(LAParser.CmdContext cmd : cmds)
+            visitCmd(cmd);
+        this.codigo_c.print("break;");
+        visitMais_selecao(ctx.mais_selecao());
         return "";
     }
 
     @Override
     public String visitMais_selecao(LAParser.Mais_selecaoContext ctx) {
+        if(ctx.selecao() != null)
+            visitSelecao(ctx.selecao());
         return "";
     }
 
