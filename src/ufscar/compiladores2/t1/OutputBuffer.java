@@ -5,11 +5,11 @@ package ufscar.compiladores2.t1;
  */
 public class OutputBuffer {
 
-    private StringBuffer conteudo;
+    private String conteudo;
     private boolean modificado;
 
     public OutputBuffer() {
-        this.conteudo = new StringBuffer();
+        this.conteudo = "";
         this.modificado = false;
     }
 
@@ -18,7 +18,7 @@ public class OutputBuffer {
             this.modificado = true;
         }
 
-        this.conteudo.append(texto);
+        this.conteudo += texto;
     }
 
     public void println(String texto) {
@@ -26,8 +26,8 @@ public class OutputBuffer {
             this.modificado = true;
         }
 
-        this.conteudo.append(texto);
-        this.conteudo.append("\n");
+        this.conteudo += texto;
+        this.conteudo += "\n";
     }
 
     public boolean isModificado() {
@@ -36,6 +36,6 @@ public class OutputBuffer {
 
     @Override
     public String toString() {
-        return this.conteudo.toString();
+        return this.conteudo;
     }
 }
