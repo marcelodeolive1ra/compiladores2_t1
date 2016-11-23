@@ -11,11 +11,13 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     private PilhaDeTabelas pilha_de_tabelas;
+
+    // Variável que armazenará o código C gerado
     private String codigo_c;
 
+    // Constantes para deixar o código mais legível (a análise semântica retorna números que identificam os comandos)
     private final String GLOBAL = "global";
     private final String LOCAL = "local";
-
     private final int LEIA = 1;
     private final int ESCREVA = 2;
     private final int SE = 3;
@@ -30,34 +32,43 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     private final int VARIAVEL = 1;
     private final int CONSTANTE = 2;
     private final int REGISTRO = 3;
+    private final String LITERAL = "literal";
+    private final String REAL = "real";
+    private final String INTEIRO = "inteiro";
+    private final String LOGICO = "logico";
 
-    // O construtor desta classe cria um buffer que armazenará em memória o código C gerado ao processar a
-    // árvore gerada pelo analisador semântico
+    // O construtor desta classe inicializa a string que armazenará em memória o código C gerado ao processar a
+    // árvore gerada pelo parser
     public GeradorDeCodigoC() {
         this.codigo_c = "";
     }
 
+    // Esta função é adiciona texto à variável que guarda o código C que é gerado durante a avaliação da árvore
+    // gerada pelo parser
     public void println(String texto) {
         this.codigo_c += (texto + "\n");
     }
 
+    // Esta função faz o mesmo que a anterior, mas sem colocar quebrar a linha após a inserção de novo texto
     public void print(String texto) {
         this.codigo_c += texto;
     }
 
+    // Esta função realiza a conversão dos tipos da linguagem LA para tipos equivalentes em linguagem C
     public String getTipoDeDadoEmC(String tipo_em_LA) {
         String tipo_em_c = "";
+
         switch (tipo_em_LA) {
-            case "literal":
+            case LITERAL:
                 tipo_em_c = "char";
                 break;
-            case "real":
+            case REAL:
                 tipo_em_c = "float";
                 break;
-            case "inteiro":
+            case INTEIRO:
                 tipo_em_c = "int";
                 break;
-            case "logico":
+            case LOGICO:
                 tipo_em_c = "bool";
                 break;
             default:
@@ -76,10 +87,11 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         this.println("#include <stdlib.h>");
         this.println("");
 
-        // Declarações globais do programa
 //        this.pilha_de_tabelas = new PilhaDeTabelas();
 //        TabelaDeSimbolos tabela_de_simbolos_global = new TabelaDeSimbolos(GLOBAL);
 //        this.pilha_de_tabelas.empilhar(tabela_de_simbolos_global);
+
+        // Declarações globais do programa
         this.visitDeclaracoes(ctx.declaracoes());
 
         this.println("int main() {");
@@ -97,7 +109,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitDeclaracoes(LAParser.DeclaracoesContext ctx) {
         if (ctx != null) {
-            for (LAParser.Decl_local_globalContext declaracao : ctx.decl_local_global()) {
+            for (LAParser.Decl_local_globalContext declaracao: ctx.decl_local_global()) {
                 visitDecl_local_global(declaracao);
             }
         }
@@ -110,17 +122,43 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         if (ctx != null) {
             if (ctx.declaracao_local() != null) {
                 this.visitDeclaracao_local(ctx.declaracao_local());
-            } else if (ctx.declaracao_global() != null ) {
+            } else if (ctx.declaracao_global() != null) {
                 this.visitDeclaracao_global(ctx.declaracao_global());
             }
         }
         return "";
     }
 
-    // Verificar o que tem que ser feito nessa regra
+    // Procedimentos ou funções
     @Override
     public String visitDeclaracao_global(LAParser.Declaracao_globalContext ctx) {
-        this.println("\t {{ declaracao_global }}");
+
+        if (ctx.comandos() != null) {
+            // Declaração de procedimento
+            if (ctx.tipo_estendido() == null) {
+                this.print("void " + ctx.IDENT().getText() + "(");
+                this.visitParametros_opcional(ctx.parametros_opcional());
+                this.println(") {");
+
+                for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
+                    this.visitCmd(comando);
+                }
+
+                this.println("}\n");
+            } else {
+                // Declaração de função, logo é necessário verificar o tipo de retorno
+                this.visitTipo_estendido(ctx.tipo_estendido());
+                this.print(ctx.IDENT().getText() + "(");
+                this.visitParametros_opcional(ctx.parametros_opcional());
+                this.println(") {");
+
+                for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
+                    this.visitCmd(comando);
+                }
+
+                this.println("}\n");
+            }
+        }
         return "";
     }
 
@@ -413,10 +451,15 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Tá dando null pointer exception
     @Override
     public String visitTipo_estendido(LAParser.Tipo_estendidoContext ctx) {
-        this.visitTipo_basico_ident(ctx.tipo_basico_ident());
-        this.visitPonteiros_opcionais(ctx.ponteiros_opcionais());
+//        if (ctx.tipo_basico_ident() != null) {
+//            this.visitTipo_basico_ident(ctx.tipo_basico_ident());
+//        }
+//        if (ctx.ponteiros_opcionais() != null) {
+//            this.visitPonteiros_opcionais(ctx.ponteiros_opcionais());
+//        }
         return "";
     }
 
@@ -458,7 +501,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitIdent_param(LAParser.Ident_paramContext ctx) {
         this.visitPonteiros_opcionais(ctx.ponteiros_opcionais());
-        this.print(ctx.IDENT().getText() + visitDimensao(ctx.dimensao()) + visitOutros_ident(ctx.outros_ident()));
+        this.print("tipo " + ctx.IDENT().getText() + visitDimensao(ctx.dimensao()) + visitOutros_ident(ctx.outros_ident()));
         return "";
     }
 
