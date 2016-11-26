@@ -322,7 +322,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                         }
 
                         for (int i = 0; i < quantidade_de_variaveis; i++) {
-                            this.print("%x");
+                            this.print("%d");
                         }
 
                         // Pegar o tipo da variável na tabela de símbolos, e se for literal, não colocar o & (pois vai ser um vetor de char)
@@ -345,7 +345,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
                     break;
                 case ESCREVA: //escreva?
-                    this.print("\tprintf(");
+                    this.print("\tprintf(\"%d\", x");
 
 
 

@@ -6,7 +6,7 @@
 package ufscar.compiladores2.t1;
 
 import java.util.BitSet;
-import jdk.nashorn.internal.parser.TokenType;
+
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
@@ -19,27 +19,33 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
  *
  * @author marcelodeoliveiradasilva
  */
-public class MeuErrorListener implements ANTLRErrorListener {
+public class LACustomErrorListener implements ANTLRErrorListener {
 
-    OutputBuffer sp;
+    OutputBuffer erros_sintaticos;
 
-    public MeuErrorListener(OutputBuffer sp) {
-        this.sp = sp;
+    public LACustomErrorListener(OutputBuffer erros_sintaticos) {
+        this.erros_sintaticos = erros_sintaticos;
+    }
+
+    @Override
+    public String toString() {
+        return this.erros_sintaticos.toString();
     }
 
     @Override
     public void syntaxError(Recognizer<?, ?> rcgnzr, Object o, int i, int i1, String string, RecognitionException re) {
         Token tk = (Token)o;
         String text = tk.getText();
-        if (text.contentEquals("<EOF>"))
+        if (text.contentEquals("<EOF>")) {
             text = "EOF";
-        sp.println("Linha "+i+": erro sintatico proximo a "+text);
+        }
+        this.erros_sintaticos.println("Linha "+i+": erro sintatico proximo a "+text);
+
         throw new ParseCancellationException();
     }
 
     @Override
     public void reportAmbiguity(Parser parser, DFA dfa, int i, int i1, boolean bln, BitSet bitset, ATNConfigSet atncs) {
-        //sp.println("Ambiguidade!");
     }
 
     @Override
@@ -49,5 +55,4 @@ public class MeuErrorListener implements ANTLRErrorListener {
     @Override
     public void reportContextSensitivity(Parser parser, DFA dfa, int i, int i1, int i2, ATNConfigSet atncs) {
     }
-
 }
