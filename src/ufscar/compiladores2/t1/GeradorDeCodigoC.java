@@ -139,11 +139,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                 this.print("void " + ctx.IDENT().getText() + "(");
                 this.visitParametros_opcional(ctx.parametros_opcional());
                 this.println(") {");
-
-                for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
-                    this.visitCmd(comando);
-                }
-
+                this.visitComandos(ctx.comandos());
                 this.println("}\n");
             } else {
                 // Declaração de função, logo é necessário verificar o tipo de retorno
@@ -151,11 +147,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                 this.print(ctx.IDENT().getText() + "(");
                 this.visitParametros_opcional(ctx.parametros_opcional());
                 this.println(") {");
-
-                for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
-                    this.visitCmd(comando);
-                }
-
+                this.visitComandos(ctx.comandos());
                 this.println("}\n");
             }
         }
@@ -374,26 +366,49 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
                     this.println(");");
                     break;
-                case SE: //se
+                case SE:
                     this.print("\tif (");
                     //visitSelecao();
                     this.print("\t}");
                     break;
-                case CASO: //caso
+                case CASO:
+                    this.print("\tswitch (");
+//                    this.visitExp_aritmetica(ctx.exp_aritmetica(0));
+                    this.println(") {");
+                    this.visitSelecao(ctx.selecao());
+                    this.visitSenao_opcional(ctx.senao_opcional());
+                    this.println("}");
                     break;
-                case PARA: // para
+                case PARA:
+                    // Podemos usar sempre "<=" pela sintaxe da linguagem LA, em que o comando "para" inclui o último
+                    // número
+                    this.print("\tfor (" + ctx.nameVar + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
+                        ";" + ctx.nameVar + "<=" + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
+                        ctx.nameVar + "++) {");
+                    this.visitComandos(ctx.comandos());
+                    this.println("}");
                     break;
-                case ENQUANTO: // enquanto
+                case ENQUANTO:
+                    this.println("\twhile (" + this.visitExpressao(ctx.expressao()) + ") {");
+                    this.visitComandos(ctx.comandos());
+                    this.println("}");
                     break;
-                case FACA: // faca
+                case FACA:
+                    this.println("\tdo {");
+                    this.visitComandos(ctx.comandos());
+                    this.println("\t} while (" + this.visitExpressao(ctx.expressao()) + ");");
                     break;
                 case PONTEIRO: // ^ (acho que é ponteiro, precisa verificar melhor na gramática)
                     break;
                 case CHAMADA: // chamada [de função ou procedimento]
+                    this.print(ctx.IDENT().getText());
+                    this.visitChamada(ctx.chamada());
+                    this.println(";");
                     break;
                 case ATRIBUICAO: // atribuição de variável
                     break;
                 case RETORNE: // retorno de função
+                    this.println("\treturn " + this.visitExpressao(ctx.expressao()) + ";");
                     break;
                 default:
                     break;
@@ -553,11 +568,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitSelecao(LAParser.SelecaoContext ctx) {
         this.print("case " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
-
-        List<LAParser.CmdContext> comandos = ctx.comandos().cmd();
-        for(LAParser.CmdContext comando : comandos) {
-            this.visitCmd(comando);
-        }
+        this.visitComandos(ctx.comandos());
         this.print("break;");
         this.visitMais_selecao(ctx.mais_selecao());
         return "";
