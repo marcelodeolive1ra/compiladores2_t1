@@ -247,7 +247,13 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             variavel_em_c = variavel_em_c.replace(";", "[100];");
         }
 
-        this.println(variavel_em_c + this.visitDimensao(ctx.dimensao()));
+        String dimensao = this.visitDimensao(ctx.dimensao());
+        if (dimensao.compareTo("") != 0) {
+            variavel_em_c = variavel_em_c.replace(";", dimensao + ";");
+        }
+
+        this.println(variavel_em_c);
+//        this.println(variavel_em_c + this.visitDimensao(ctx.dimensao()));
 
         this.visitMais_var(ctx.mais_var, tipo);
 
@@ -409,23 +415,20 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     }
                     break;
                 case SE:
-                    this.print("\tif (");
-                    //visitSelecao();
+                    this.println("\tif (" + this.visitExpressao(ctx.expressao()) + ") {");
+                    this.visitComandos(ctx.comandos());
                     this.print("\t}");
+                    this.visitSenao_opcional(ctx.senao_opcional());
                     break;
                 case CASO:
-                    this.print("\tswitch (");
-//                    this.visitExp_aritmetica(ctx.exp_aritmetica(0));
-                    this.println(") {");
+                    this.println("\tswitch (" + this.visitExp_aritmetica(ctx.exp_aritmetica().get(0)) +  ") {");
                     this.visitSelecao(ctx.selecao());
                     this.println("\tdefault:");
                     if (ctx.senao_opcional().comandos() != null) {
                         this.print("\t");
-                        for (LAParser.CmdContext comando: ctx.senao_opcional().comandos().cmd()) {
-                            this.visitCmd(comando);
-                        }
+                        this.visitComandos(ctx.senao_opcional().comandos());
                     } else {
-                        this.println("\tbreak;");
+                        this.println("\t\tbreak;");
                     }
 
                     this.println("\t}");
@@ -453,6 +456,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.println("\t} while (" + this.visitExpressao(ctx.expressao()) + ");");
                     break;
                 case PONTEIRO: // ^ (acho que é ponteiro, precisa verificar melhor na gramática)
+                    this.println("*" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) +
+                            this.visitDimensao(ctx.dimensao()) + " = " + this.visitExpressao(ctx.expressao()) + ";");
                     break;
                 case CHAMADA: // chamada [de função ou procedimento]
                     this.print(ctx.IDENT().getText());
@@ -463,15 +468,17 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     if (ctx.atribuicao().type.compareTo(LITERAL) != 0) {
                         // Variável não é do tipo literal
 
-                        this.print(ctx.IDENT().getText() + " = ");
+                        this.print(ctx.IDENT().getText());
                         this.visitAtribuicao(ctx.atribuicao());
                         this.println(";");
                     } else {
                         // Variável é literal
 
-                        this.print("\tstrcpy(" + ctx.IDENT().getText() + ", ");
-                        this.visitAtribuicao(ctx.atribuicao());
-                        this.println(";");
+                        this.println("\tstrcpy(" + ctx.IDENT().getText() + visitOutros_ident(ctx.outros_ident()) +
+                                visitDimensao(ctx.dimensao()) + ", " + visitExpressao(ctx.expressao()) + ";");
+
+//                        this.visitAtribuicao(ctx.atribuicao());
+//                        this.println(";");
                     }
                     break;
                 case RETORNE: // retorno de função
@@ -618,6 +625,12 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitSenao_opcional(LAParser.Senao_opcionalContext ctx) {
+        if (ctx.comandos() != null) {
+            this.println(" else {");
+            this.print("\t\t");
+            this.visitComandos(ctx.comandos());
+            this.println("\t}");
+        }
         return "";
     }
 
@@ -681,62 +694,101 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitOp_unario(LAParser.Op_unarioContext ctx) {
-        return "";
+        return ctx.getText();
     }
 
     @Override
     public String visitExp_aritmetica(LAParser.Exp_aritmeticaContext ctx) {
-        return "";
+        return (ctx != null) ? this.visitTermo(ctx.termo()) + this.visitOutros_termos(ctx.outros_termos()) : "";
     }
 
     @Override
     public String visitOp_multiplicacao(LAParser.Op_multiplicacaoContext ctx) {
-        return "";
+        return ctx.getText();
     }
 
     @Override
     public String visitOp_adicao(LAParser.Op_adicaoContext ctx) {
-        return "";
+        return ctx.getText();
     }
 
     @Override
     public String visitTermo(LAParser.TermoContext ctx) {
-        return "";
+        return this.visitFator(ctx.fator()) + this.visitOutros_fatores(ctx.outros_fatores());
     }
 
     @Override
     public String visitOutros_termos(LAParser.Outros_termosContext ctx) {
-        return "";
+        int i = 0;
+        String outros_termos = "";
+
+        for (LAParser.Op_adicaoContext operador: ctx.op_adicao()) {
+            outros_termos += " " + this.visitOp_adicao(operador) + " " + this.visitTermo(ctx.termo().get(i));
+            i++;
+        }
+
+        return outros_termos;
     }
 
     @Override
     public String visitFator(LAParser.FatorContext ctx) {
-        return "";
+        return this.visitParcela(ctx.parcela()) + this.visitOutras_parcelas(ctx.outras_parcelas());
     }
 
     @Override
     public String visitOutros_fatores(LAParser.Outros_fatoresContext ctx) {
-        return "";
+        int i = 0;
+        String outros_fatores = "";
+
+        for (LAParser.Op_multiplicacaoContext operador: ctx.op_multiplicacao()) {
+            outros_fatores += this.visitOp_multiplicacao(operador) + this.visitFator(ctx.fator().get(i));
+            i++;
+        }
+
+        return outros_fatores;
     }
 
     @Override
     public String visitParcela(LAParser.ParcelaContext ctx) {
-        return "";
+        return (ctx.parcelaTipo == 1) ? this.visitOp_unario(ctx.op_unario()) + this.visitParcela_unario(ctx.parcela_unario()):
+                this.visitParcela_nao_unario(ctx.parcela_nao_unario());
     }
 
     @Override
     public String visitParcela_unario(LAParser.Parcela_unarioContext ctx) {
+        if (ctx.tipoParc == 1) {
+            return "* " + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
+        } else if (ctx.tipoParc == 2) {
+            return ctx.IDENT().getText() +
+                    ((ctx.chamada_partes().tipoChamada == 1) ? "(" + this.visitExpressao(ctx.chamada_partes().expressao()) +
+                            this.visitMais_expressao(ctx.chamada_partes().mais_expressao()) + ")" :
+                            ((ctx.chamada_partes().tipoChamada == 2) ? this.visitOutros_ident(ctx.chamada_partes().outros_ident()) +
+                                    this.visitDimensao(ctx.chamada_partes().dimensao()) : ""));
+        } else if (ctx.tipoParc == 3) {
+            return ctx.NUM_INT.getText();
+        } else if (ctx.tipoParc == 4) {
+            return ctx.NUM_REAL.getText();
+        } else if (ctx.tipoParc == 5) {
+            return "(" + this.visitExpressao(ctx.expressao()) + ")";
+        }
         return "";
     }
 
     @Override
     public String visitParcela_nao_unario(LAParser.Parcela_nao_unarioContext ctx) {
-        return "";
+        return (ctx.type.compareTo(LITERAL) == 0) ? ctx.CADEIA.getText() : "&" + ctx.IDENT().getText() +
+                this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
     }
 
     @Override
     public String visitOutras_parcelas(LAParser.Outras_parcelasContext ctx) {
-        return "";
+        String outras_parcelas = "";
+
+        for (LAParser.ParcelaContext parcela: ctx.parcela()) {
+            outras_parcelas += "% " + this.visitParcela(parcela);
+        }
+
+        return outras_parcelas;
     }
 
     @Override
@@ -746,12 +798,12 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitExp_relacional(LAParser.Exp_relacionalContext ctx) {
-        return "";
+        return this.visitExp_aritmetica(ctx.exp_aritmetica()) + this.visitOp_opcional(ctx.op_opcional());
     }
 
     @Override
     public String visitOp_opcional(LAParser.Op_opcionalContext ctx) {
-        return "";
+        return this.visitOp_relacional(ctx.op_relacional()) + this.visitExp_aritmetica(ctx.exp_aritmetica());
     }
 
     @Override
@@ -761,37 +813,40 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitExpressao(LAParser.ExpressaoContext ctx) {
-        return "";
+        return this.visitTermo_logico(ctx.termo_logico()) + this.visitOutros_termos_logicos(ctx.outros_termos_logicos());
     }
 
     @Override
     public String visitOp_nao(LAParser.Op_naoContext ctx) {
-        return "";
+        return (ctx.getText().compareTo("nao") == 0) ? "!" : "";
     }
 
     @Override
     public String visitTermo_logico(LAParser.Termo_logicoContext ctx) {
-        return "";
+        return (ctx != null) ? this.visitFator_logico(ctx.fator_logico()) +
+                this.visitOutros_fatores_logicos(ctx.outros_fatores_logicos()) : "";
     }
 
     @Override
     public String visitOutros_termos_logicos(LAParser.Outros_termos_logicosContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitOutros_fatores_logicos(LAParser.Outros_fatores_logicosContext ctx) {
-        return "";
+        return (ctx.termo_logico() != null) ? " || " + this.visitTermo_logico(ctx.termo_logico()) +
+                this.visitOutros_termos_logicos(ctx.outros_termos_logicos()): "";
     }
 
     @Override
     public String visitFator_logico(LAParser.Fator_logicoContext ctx) {
-        return "";
+        return (ctx != null) ? this.visitOp_nao(ctx.op_nao()) + this.visitParcela_logica(ctx.parcela_logica()) : "";
+    }
+
+    @Override
+    public String visitOutros_fatores_logicos(LAParser.Outros_fatores_logicosContext ctx) {
+        return (ctx.fator_logico() != null) ? " && " + this.visitFator_logico(ctx.fator_logico()) +
+                this.visitOutros_fatores_logicos(ctx.outros_fatores_logicos()) : "";
     }
 
     @Override
     public String visitParcela_logica(LAParser.Parcela_logicaContext ctx) {
-        return "";
+        return (ctx.tipoParc == 1) ? ("true") : ((ctx.tipoParc == 2)? ("false") : this.visitExp_relacional(ctx.exp_relacional()));
     }
 
     @Override
