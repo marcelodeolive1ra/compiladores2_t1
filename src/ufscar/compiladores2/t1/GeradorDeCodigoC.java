@@ -202,25 +202,28 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.println("} " + ctx.IDENT.getText() + ";\n");
                 }
 
+/*
+            if(ctx.children != null) {
+                out.println("\tstruct {");
+                visitVariavel(ctx.variavel());
+                visitMais_variaveis(ctx.mais_variaveis());
 
-//            if(ctx.children != null) {
-//                out.println("\tstruct {");
-//                visitVariavel(ctx.variavel());
-//                visitMais_variaveis(ctx.mais_variaveis());
-//
-//                out.print("\t}");
-//                return "struct ";
-//            }
-//
-//
-//            public String visitTipo(GrammarLAParser.TipoContext ctx) {
-//                if(ctx.registro() != null){
-//                    return visitRegistro(ctx.registro());
-//                } else{
-//                    return visitTipo_estendido(ctx.tipo_estendido());
-//                }
-//            }
-//            visitTipo(ctx.tipo());
+                out.print("\t}");
+                return "struct ";
+            }
+*/
+
+/*
+
+            public String visitTipo(GrammarLAParser.TipoContext ctx) {
+                if(ctx.registro() != null){
+                    return visitRegistro(ctx.registro());
+                } else{
+                    return visitTipo_estendido(ctx.tipo_estendido());
+                }
+            }
+           visitTipo(ctx.tipo());
+*/
 
             }
         }
