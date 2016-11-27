@@ -243,11 +243,11 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         String variavel_em_c = "\t" + tipo + " " + ctx.IDENT().getText() + ';';
 
         // Tratamento do caso de strings em C, que são tratadas como vetores de char
-        if (ctx.tipoVar.compareTo("literal") == 0) {
+        if (ctx.tipoVar.compareTo(LITERAL) == 0) {
             variavel_em_c = variavel_em_c.replace(";", "[100];");
         }
 
-        this.println(variavel_em_c);
+        this.println(variavel_em_c + this.visitDimensao(ctx.dimensao()));
 
         this.visitMais_var(ctx.mais_var, tipo);
 
@@ -309,22 +309,61 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     } else {
                         this.print("\tscanf(\"");
 
-                        if (ctx.mais_ident() != null) {
-                            quantidade_de_variaveis = ctx.mais_ident().identificador().size() + 1;
+                        switch (ctx.tipoVar) {
+                            case INTEIRO:
+                                this.println("%d\", &" + ctx.nameVar + ");");
+                                break;
+                            case REAL:
+                                this.println("%f\", &" + ctx.nameVar + ");");
+                                break;
+                            default:
+                                break;
                         }
+//
+//                        String[] tipos ;
+//
+//                        if (ctx.mais_ident() != null) {
+//                            quantidade_de_variaveis = ctx.mais_ident().identificador().size() + 1;
+//                            tipos = new String[ctx.mais_ident().identificador().size() + 1];
+//
+//                            tipos[0] = ctx.tipoVar;
+//
+//                            for (int i = 1; i < quantidade_de_variaveis; i++) {
+//                                tipos[i] = ctx.mais_ident().identificador().get(i - 1).outros_ident().tipoVar;
+//                                this.print("%d");
+//                            }
+//                        }
 
-                        for (int i = 0; i < quantidade_de_variaveis; i++) {
-                            this.print("%d");
-                        }
 
-                        // Pegar o tipo da variável na tabela de símbolos, e se for literal, não colocar o & (pois vai ser um vetor de char)
-                        this.print("\", &");
-                        this.print(ctx.identificador().nameVar);
 
-                        String tipo_de_leitura = "";
+
+
+
+//                        this.print("\", &");
+//                        this.print(ctx.identificador().nameVar);
+
+//                        String tipo_de_leitura = "";
 
                         // Precisa pegar o tipo da variável na tabela de símbolos
                         //switch (ctx.identificador.)
+
+//                        if (ctx.mais_ident() != null) {
+//                            for (LAParser.IdentificadorContext i : ctx.mais_ident().identificador()) {
+//                                switch (i.) {
+//                                    case INTEIRO:
+//                                        this.println("%d\", &" + ctx.nameVar + ");");
+//                                        break;
+//                                    case REAL:
+//                                        this.println("%f\", &" + ctx.nameVar + ");");
+//                                        break;
+//                                    default:
+//                                        break;
+//                                }
+//
+//
+////                                this.print(", &" + i.nameVar);
+//                            }
+//                        }
 
                         if (ctx.mais_ident() != null) {
                             for (LAParser.IdentificadorContext i : ctx.mais_ident().identificador()) {
@@ -332,13 +371,15 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                             }
                         }
 
-                        this.println(");");
+//                        this.println(");");
                     }
 
                     break;
                 case ESCREVA: //escreva?
-                    this.print("\tprintf(\"%d\", x");
-
+                    if (ctx.tipoVar.compareTo(LITERAL) == 0) {
+                        this.println("\tprintf(\"%s\", " + "x" + ");");
+                    } else {
+                        this.print("\tprintf(\"%d\", x");
 
 
 //                    if (ctx.tipoVar.compareTo("literal") == 0) {
@@ -346,7 +387,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 //                    }
 
 
-                    // escreva ( expressao mais_expressao )
+                        // escreva ( expressao mais_expressao )
 
 //                    if (ctx.mais_ident() != null) {
 //                        quantidade_de_variaveis = ctx.mais_ident().identificador().size() + 1;
@@ -364,7 +405,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 //                        }
 //                    }
 
-                    this.println(");");
+                        this.println(");");
+                    }
                     break;
                 case SE:
                     this.print("\tif (");
@@ -376,25 +418,37 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 //                    this.visitExp_aritmetica(ctx.exp_aritmetica(0));
                     this.println(") {");
                     this.visitSelecao(ctx.selecao());
-                    this.visitSenao_opcional(ctx.senao_opcional());
-                    this.println("}");
+                    this.println("\tdefault:");
+                    if (ctx.senao_opcional().comandos() != null) {
+                        this.print("\t");
+                        for (LAParser.CmdContext comando: ctx.senao_opcional().comandos().cmd()) {
+                            this.visitCmd(comando);
+                        }
+                    } else {
+                        this.println("\tbreak;");
+                    }
+
+                    this.println("\t}");
                     break;
                 case PARA:
                     // Podemos usar sempre "<=" pela sintaxe da linguagem LA, em que o comando "para" inclui o último
                     // número
-                    this.print("\tfor (" + ctx.nameVar + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
-                        ";" + ctx.nameVar + "<=" + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
+                    this.println("\tfor (" + ctx.nameVar + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
+                        "; " + ctx.nameVar + " <= " + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
                         ctx.nameVar + "++) {");
+                    this.print("\t");
                     this.visitComandos(ctx.comandos());
-                    this.println("}");
+                    this.println("\t}");
                     break;
                 case ENQUANTO:
                     this.println("\twhile (" + this.visitExpressao(ctx.expressao()) + ") {");
+                    this.print("\t");
                     this.visitComandos(ctx.comandos());
-                    this.println("}");
+                    this.println("\t}");
                     break;
                 case FACA:
                     this.println("\tdo {");
+                    this.print("\t");
                     this.visitComandos(ctx.comandos());
                     this.println("\t} while (" + this.visitExpressao(ctx.expressao()) + ");");
                     break;
@@ -406,6 +460,19 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.println(";");
                     break;
                 case ATRIBUICAO: // atribuição de variável
+                    if (ctx.atribuicao().type.compareTo(LITERAL) != 0) {
+                        // Variável não é do tipo literal
+
+                        this.print(ctx.IDENT().getText() + " = ");
+                        this.visitAtribuicao(ctx.atribuicao());
+                        this.println(";");
+                    } else {
+                        // Variável é literal
+
+                        this.print("\tstrcpy(" + ctx.IDENT().getText() + ", ");
+                        this.visitAtribuicao(ctx.atribuicao());
+                        this.println(";");
+                    }
                     break;
                 case RETORNE: // retorno de função
                     this.println("\treturn " + this.visitExpressao(ctx.expressao()) + ";");
@@ -445,6 +512,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitTipo(LAParser.TipoContext ctx) {
+        this.visitRegistro(ctx.registro());
         return "";
     }
 
@@ -480,16 +548,24 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitValor_constante(LAParser.Valor_constanteContext ctx) {
-        return "VALORCONSTANTE";
+        return ctx.getText();
     }
 
     @Override
     public String visitRegistro(LAParser.RegistroContext ctx) {
+        for (LAParser.Variavel_registroContext variavel: ctx.variavel_registro()) {
+            this.visitVariavel_registro(variavel);
+        }
         return "";
     }
 
     @Override
     public String visitVariavel_registro(LAParser.Variavel_registroContext ctx) {
+        if (ctx.tipo.tipodado.compareTo(LITERAL) == 0) {
+            println(this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + "[100]" + ";");
+        } else {
+            println(this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + ";");
+        }
         return "";
     }
 
@@ -567,9 +643,10 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitSelecao(LAParser.SelecaoContext ctx) {
-        this.print("case " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
+        this.println("\tcase " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
+        this.print("\t");
         this.visitComandos(ctx.comandos());
-        this.print("break;");
+        this.println("\tbreak;");
         this.visitMais_selecao(ctx.mais_selecao());
         return "";
     }
