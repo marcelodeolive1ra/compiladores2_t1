@@ -17,24 +17,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     // Constantes para deixar o código mais legível (a análise semântica retorna números que identificam os comandos)
     private final String GLOBAL = "global";
     private final String LOCAL = "local";
-    private final int LEIA = 1;
-    private final int ESCREVA = 2;
-    private final int SE = 3;
-    private final int CASO = 4;
-    private final int PARA = 5;
-    private final int ENQUANTO = 6;
-    private final int FACA = 7;
-    private final int PONTEIRO = 8;
-    private final int CHAMADA = 9;
-    private final int ATRIBUICAO = 10;
-    private final int RETORNE = 11;
-    private final int VARIAVEL = 1;
-    private final int CONSTANTE = 2;
-    private final int REGISTRO = 3;
-    private final String LITERAL = "literal";
-    private final String REAL = "real";
-    private final String INTEIRO = "inteiro";
-    private final String LOGICO = "logico";
+    private final int LEIA = 1, ESCREVA = 2, SE = 3, CASO = 4, PARA = 5, ENQUANTO = 6, FACA = 7, PONTEIRO = 8,
+        CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11, VARIAVEL = 1, CONSTANTE = 2, REGISTRO = 3;
+    private final String LITERAL = "literal", REAL = "real", INTEIRO = "inteiro", LOGICO = "logico";
 
     // O construtor desta classe inicializa a string que armazenará em memória o código C gerado ao processar a
     // árvore gerada pelo parser
@@ -69,6 +54,15 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                 break;
             case LOGICO:
                 tipo_em_c = "bool";
+                break;
+            case INTEIRO + "^":
+                tipo_em_c = "int*";
+                break;
+            case REAL + "^":
+                tipo_em_c = "float*";
+                break;
+            case LITERAL + "^":
+                tipo_em_c = "char*";
                 break;
             default:
                 break;
@@ -127,7 +121,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     // Procedimentos ou funções
     @Override
     public String visitDeclaracao_global(LAParser.Declaracao_globalContext ctx) {
-
         if (ctx.comandos() != null) {
             // Declaração de procedimento
             if (ctx.tipo_estendido() == null) {
@@ -151,15 +144,12 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitDeclaracao_local(LAParser.Declaracao_localContext ctx) {
-
         if (ctx.tipoDec == VARIAVEL) {
             this.visitVariavel(ctx.variavel);
         } else if (ctx.tipoDec == CONSTANTE) {
             this.println("#define " + ctx.IDENT.getText() + " " + visitValor_constante(ctx.valor_constante()));
         } else {
             if (ctx.tipoDec == REGISTRO) {
-
-
                 if (ctx.tipo().registro() != null) {
                     this.println("typedef struct " + ctx.IDENT.getText() + " {");
 
@@ -170,7 +160,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                         String variavel_em_c = "\t" + tipo + " " + v.IDENT() + ';';
 
                         // Tratamento do caso de strings em C, que são tratadas como vetores de char
-                        if (v.tipo().tipodado.compareTo("literal") == 0) {
+                        if (v.tipo().tipodado.compareTo(LITERAL) == 0) {
                             variavel_em_c = variavel_em_c.replace(";", "[100];");
                         }
 
@@ -182,7 +172,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                                 String variavel_em_c2 = "\t" + tipo + " " + v1 + ';';
 
                                 // Tratamento do caso de strings em C, que são tratadas como vetores de char
-                                if (v.tipo().tipodado.compareTo("literal") == 0) {
+                                if (v.tipo().tipodado.compareTo(LITERAL) == 0) {
                                     variavel_em_c2 = variavel_em_c.replace(";", "[100];");
                                 }
 
@@ -210,7 +200,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     }
 
     public String visitVariavel(LAParser.VariavelContext ctx) {
-        // tratar o caso de literais que têm que ser convertidos para array de char em C
         String tipo = getTipoDeDadoEmC(ctx.tipoVar);
 
         String variavel_em_c = "\t" + tipo + " " + ctx.IDENT().getText() + ';';
@@ -226,11 +215,10 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         }
 
         this.println(variavel_em_c);
-//        this.println(variavel_em_c + this.visitDimensao(ctx.dimensao()));
 
         this.visitMais_var_aux(ctx.mais_var(), tipo);
 
-        //tratar caso de ponteiros e registros
+        //tratar caso de registros
 
         return "";
     }
@@ -275,13 +263,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitCmd(LAParser.CmdContext ctx) {
         if (ctx != null) {
-
-            // Tratar leia, escreva, se, entao, senao, caso, faca, enquanto
-
-            int quantidade_de_variaveis = 0;
-
             switch(ctx.tipoCmd) {
-
                 case LEIA:
                     if(ctx.tipoVar.compareTo(LITERAL) == 0) {
                         this.println("\tgets(" + ctx.nameVar + ");");
@@ -296,7 +278,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                             }
                         }
                     }
-
                     break;
                 case ESCREVA:
                     this.print("\tprintf(\"");
@@ -316,7 +297,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                         }
                         this.println(mais_expressoes[i] + ");");
                     }
-
                     break;
                 case SE:
                     this.println("\tif (" + this.visitExpressao(ctx.expressao()) + ") {");
@@ -391,7 +371,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitPonteiros_opcionais(LAParser.Ponteiros_opcionaisContext ctx) {
-        this.print(ctx.ponteiros/*.replace("^", "*")*/ + " ");
+        this.print(ctx.ponteiros + " ");
         return "";
     }
 
@@ -426,7 +406,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitTipo_basico(LAParser.Tipo_basicoContext ctx) {
-        if(ctx.tipodado.equals("literal"))
+        if(ctx.tipodado.equals(LITERAL))
             this.print("char*");
         else
             this.print(getTipoDeDadoEmC(ctx.tipodado));
@@ -548,7 +528,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitAtribuicao(LAParser.AtribuicaoContext ctx) {
-        this.print(this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao()) + " = " + this.visitExpressao(ctx.expressao()));
+        this.print(this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao()) + " = " +
+                this.visitExpressao(ctx.expressao()));
         return "";
     }
 
@@ -732,7 +713,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitOutros_termos_logicos(LAParser.Outros_termos_logicosContext ctx) {
         return (ctx.termo_logico() != null) ? " || " + this.visitTermo_logico(ctx.termo_logico()) +
-                this.visitOutros_termos_logicos(ctx.outros_termos_logicos()): "";
+                this.visitOutros_termos_logicos(ctx.outros_termos_logicos()) : "";
     }
 
     @Override
@@ -748,7 +729,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParcela_logica(LAParser.Parcela_logicaContext ctx) {
-        return (ctx.tipoParc == 1) ? ("true") : ((ctx.tipoParc == 2)? ("false") : this.visitExp_relacional(ctx.exp_relacional()));
+        return (ctx.tipoParc == 1) ? ("true") : ((ctx.tipoParc == 2) ? ("false") :
+                this.visitExp_relacional(ctx.exp_relacional()));
     }
 
     @Override
