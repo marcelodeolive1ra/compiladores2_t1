@@ -7,7 +7,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * Created by marcelodeoliveiradasilva on 19/11/16.
  */
 
-
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     private PilhaDeTabelas pilha_de_tabelas;
@@ -87,10 +86,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         this.println("#include <stdlib.h>");
         this.println("");
 
-//        this.pilha_de_tabelas = new PilhaDeTabelas();
-//        TabelaDeSimbolos tabela_de_simbolos_global = new TabelaDeSimbolos(GLOBAL);
-//        this.pilha_de_tabelas.empilhar(tabela_de_simbolos_global);
-
         // Declarações globais do programa
         this.visitDeclaracoes(ctx.declaracoes());
 
@@ -160,7 +155,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         if (ctx.tipoDec == VARIAVEL) {
             this.visitVariavel(ctx.variavel);
         } else if (ctx.tipoDec == CONSTANTE) {
-            this.println("#DEFINE " + ctx.IDENT.getText() + " " + visitValor_constante(ctx.valor_constante()));
+            this.println("#define " + ctx.IDENT.getText() + " " + visitValor_constante(ctx.valor_constante()));
         } else {
             if (ctx.tipoDec == REGISTRO) {
 
@@ -201,26 +196,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
                     this.println("} " + ctx.IDENT.getText() + ";\n");
                 }
-
-
-//            if(ctx.children != null) {
-//                out.println("\tstruct {");
-//                visitVariavel(ctx.variavel());
-//                visitMais_variaveis(ctx.mais_variaveis());
-//
-//                out.print("\t}");
-//                return "struct ";
-//            }
-//
-//
-//            public String visitTipo(GrammarLAParser.TipoContext ctx) {
-//                if(ctx.registro() != null){
-//                    return visitRegistro(ctx.registro());
-//                } else{
-//                    return visitTipo_estendido(ctx.tipo_estendido());
-//                }
-//            }
-//            visitTipo(ctx.tipo());
 
             }
         }
@@ -263,9 +238,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     }
 
     public String visitMais_var(LAParser.Mais_varContext ctx) {
-            for (TerminalNode v : ctx.IDENT()) {
-                this.print(", " + v.getText() + ";");
-            }
+        for (TerminalNode v : ctx.IDENT()) {
+            this.print(", " + v.getText() + ";");
+        }
         return "";
     }
 
@@ -353,7 +328,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.visitSenao_opcional(ctx.senao_opcional());
                     break;
                 case CASO:
-                    this.println("\tswitch (" + this.visitExp_aritmetica(ctx.exp_aritmetica().get(0)) +  ") {");
+                    this.println("\tswitch (" + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +  ") {");
                     this.visitSelecao(ctx.selecao());
                     this.println("\tdefault:");
                     if (ctx.senao_opcional().comandos() != null) {
@@ -362,15 +337,14 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     } else {
                         this.println("\t\tbreak;");
                     }
-
                     this.println("\t}");
                     break;
                 case PARA:
                     // Podemos usar sempre "<=" pela sintaxe da linguagem LA, em que o comando "para" inclui o último
                     // número
                     this.println("\tfor (" + ctx.nameVar + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
-                        "; " + ctx.nameVar + " <= " + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
-                        ctx.nameVar + "++) {");
+                            "; " + ctx.nameVar + " <= " + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
+                            ctx.nameVar + "++) {");
                     this.print("\t");
                     this.visitComandos(ctx.comandos());
                     this.println("\t}");
@@ -399,18 +373,13 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                 case ATRIBUICAO: // atribuição de variável
                     if (ctx.atribuicao().type.compareTo(LITERAL) != 0) {
                         // Variável não é do tipo literal
-
                         this.print("\t" + ctx.IDENT().getText());
                         this.visitAtribuicao(ctx.atribuicao());
                         this.println(";");
                     } else {
                         // Variável é literal
-
                         this.println("\tstrcpy(" + ctx.IDENT().getText() + visitOutros_ident(ctx.outros_ident()) +
                                 visitDimensao(ctx.dimensao()) + ", " + visitExpressao(ctx.expressao()) + ";");
-
-//                        this.visitAtribuicao(ctx.atribuicao());
-//                        this.println(";");
                     }
                     break;
                 case RETORNE: // retorno de função
@@ -550,7 +519,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
-//    @Override
+    //    @Override
     public String[] visitMais_expressao_aux(LAParser.Mais_expressaoContext ctx) {
         String[] mais_expressoes = new String[ctx.expressao().size()];
         int i = 0;
@@ -597,7 +566,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     public String visitSelecao(LAParser.SelecaoContext ctx) {
         this.println("\tcase " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
         this.print("\t");
-        this.visitComandos(ctx.comandos());
+        for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
+            this.visitCmd(comando);
+        }
         this.println("\tbreak;");
         this.visitMais_selecao(ctx.mais_selecao());
         return "";
@@ -665,7 +636,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             outros_termos += " " + this.visitOp_adicao(operador) + " " + this.visitTermo(ctx.termo().get(i));
             i++;
         }
-
         return outros_termos;
     }
 
@@ -683,7 +653,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             outros_fatores += this.visitOp_multiplicacao(operador) + this.visitFator(ctx.fator().get(i));
             i++;
         }
-
         return outros_fatores;
     }
 
@@ -726,7 +695,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         for (LAParser.ParcelaContext parcela: ctx.parcela()) {
             outras_parcelas += "% " + this.visitParcela(parcela);
         }
-
         return outras_parcelas;
     }
 
