@@ -196,7 +196,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
                     this.println("} " + ctx.IDENT.getText() + ";\n");
                 }
-
             }
         }
         return "";
@@ -209,7 +208,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         }
         return "";
     }
-
 
     public String visitVariavel(LAParser.VariavelContext ctx) {
         // tratar o caso de literais que têm que ser convertidos para array de char em C
@@ -334,9 +332,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     if (ctx.senao_opcional().comandos() != null) {
                         this.print("\t");
                         this.visitComandos(ctx.senao_opcional().comandos());
-                    } else {
-                        this.println("\t\tbreak;");
                     }
+                    this.println("\t\tbreak;");
                     this.println("\t}");
                     break;
                 case PARA:
@@ -519,7 +516,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
-    //    @Override
     public String[] visitMais_expressao_aux(LAParser.Mais_expressaoContext ctx) {
         String[] mais_expressoes = new String[ctx.expressao().size()];
         int i = 0;
@@ -566,9 +562,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     public String visitSelecao(LAParser.SelecaoContext ctx) {
         this.println("\tcase " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
         this.print("\t");
-        for (LAParser.CmdContext comando: ctx.comandos().cmd()) {
-            this.visitCmd(comando);
-        }
+        this.visitComandos(ctx.comandos());
         this.println("\tbreak;");
         this.visitMais_selecao(ctx.mais_selecao());
         return "";
