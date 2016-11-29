@@ -12,11 +12,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-//        final String MODO_EXECUCAO = "teste";
-        final String MODO_EXECUCAO = "live";
-
-        if (MODO_EXECUCAO.compareTo("teste") != 0) {
-
+        if (args.length > 0) {
             // Arquivos que serão utilizados pelo corretor automático
             File arquivo_entrada = new File(args[0]);
             File arquivo_saida = new File(args[1]);
