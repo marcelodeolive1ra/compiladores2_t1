@@ -143,7 +143,13 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitDeclaracao_local(LAParser.Declaracao_localContext ctx) {
         if (ctx.tipoDec == VARIAVEL) {
-            this.visitVariavel(ctx.variavel);
+            if(ctx.tipoVar.compareTo("registro") == 0) {
+                this.println("\tstruct {");
+                this.visitRegistro(ctx.variavel().tipo().registro());
+                this.println("\t} " + ctx.variavel().IDENT().getText() + ";");
+            } else {
+                this.visitVariavel(ctx.variavel);
+            }
         } else if (ctx.tipoDec == CONSTANTE) {
             this.println("#define " + ctx.IDENT.getText() + " " + visitValor_constante(ctx.valor_constante()));
         } else {
@@ -449,9 +455,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitVariavel_registro(LAParser.Variavel_registroContext ctx) {
         if (ctx.tipo.tipodado.compareTo(LITERAL) == 0) {
-            println(this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + "[100]" + ";");
+            this.println("\t\t" + this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + "[100]" + ";");
         } else {
-            println(this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + ";");
+            this.println("\t\t" + this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + ";");
         }
         return "";
     }
