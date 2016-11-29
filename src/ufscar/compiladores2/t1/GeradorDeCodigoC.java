@@ -8,9 +8,6 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
-
-    private PilhaDeTabelas pilha_de_tabelas;
-
     // Variável que armazenará o código C gerado
     private String codigo_c;
 
@@ -183,8 +180,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                             }
                         }
                     }
-                    //visitMais_var(ctx.tipo().registro());
-
                     this.println("} " + ctx.IDENT.getText() + ";\n");
                 }
             }
@@ -282,13 +277,15 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     break;
                 case ESCREVA:
                     this.print("\tprintf(\"");
-                    this.print((ctx.tipoVar.compareTo(LITERAL) == 0) ? "%s" : (ctx.tipoVar.compareTo(INTEIRO) == 0) ? "%d": "%f");
+                    this.print((ctx.tipoVar.compareTo(LITERAL) == 0) ? "%s" : (ctx.tipoVar.compareTo(INTEIRO) == 0) ? "%d":
+                            (ctx.tipoVar.compareTo(REAL) == 0) ? "%f" : "%s");
                     this.println("\", " + this.visitExpressao(ctx.expressao()) + ");");
 
                     String[] mais_expressoes = this.visitMais_expressao_aux(ctx.mais_expressao());
 
                     for (int i = 0; i < mais_expressoes.length; i++) {
                         String tipo = ctx.mais_expressao().tipos.get(i);
+
                         if (tipo.compareTo(LITERAL) == 0) {
                             this.print("\tprintf(\"%s\", ");
                         } else if (tipo.compareTo(REAL) == 0) {
@@ -358,7 +355,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                         this.println(";");
                     } else {
                         // Variável é literal
-                        this.println("\tstrcpy(" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) +
+                        this.println("\tstrcpy(" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.atribuicao().outros_ident()) +
                                 this.visitDimensao(ctx.dimensao()) + ", " +
                                 this.visitExpressao(ctx.atribuicao().expressao()) + ");");
                     }
@@ -381,16 +378,16 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitOutros_ident(LAParser.Outros_identContext ctx) {
+        String outros_identificadores = "";
         if (ctx != null) {
             List<TerminalNode> idents = ctx.IDENT();
-            List<LAParser.DimensaoContext> dims = ctx.dimensao();
-            String o_idents = "";
+            List<LAParser.DimensaoContext> dimensao = ctx.dimensao();
+
             for (int i = 0; i < idents.size(); i++) {
-                o_idents += "." + idents.get(i).getText() + this.visitDimensao(dims.get(i));
+                outros_identificadores += "." + idents.get(i).getText() + this.visitDimensao(dimensao.get(i));
             }
-            return o_idents;
         }
-        return "";
+        return outros_identificadores;
     }
 
     @Override
