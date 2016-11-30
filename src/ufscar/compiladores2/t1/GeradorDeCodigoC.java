@@ -405,9 +405,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     }
 
     @Override
-    public String visitMais_ident(LAParser.Mais_identContext ctx) { return ""; }
-
-    @Override
     public String visitTipo_basico(LAParser.Tipo_basicoContext ctx) {
         this.print((ctx.tipodado.compareTo(LITERAL) == 0) ? "char*" : this.getTipoDeDadoEmC(ctx.tipodado));
         return "";
@@ -416,7 +413,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitTipo_basico_ident(LAParser.Tipo_basico_identContext ctx) {
         return this.visitTipo_basico(ctx.tipo_basico());
-//        return "";
     }
 
     @Override
@@ -470,21 +466,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     public String visitIdent_param(LAParser.Ident_paramContext ctx) {
         this.visitPonteiros_opcionais(ctx.ponteiros_opcionais());
         this.print(ctx.IDENT().getText() + visitDimensao(ctx.dimensao()) + visitOutros_ident(ctx.outros_ident()));
-        return "";
-    }
-
-    @Override
-    public String visitMais_id_param(LAParser.Mais_id_paramContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitVar_opcional(LAParser.Var_opcionalContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitMais_parametros(LAParser.Mais_parametrosContext ctx) {
         return "";
     }
 
@@ -548,26 +529,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitMais_selecao(LAParser.Mais_selecaoContext ctx) {
         return (ctx.selecao() != null) ? this.visitSelecao(ctx.selecao()) : "";
-    }
-
-    @Override
-    public String visitConstantes(LAParser.ConstantesContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitMais_constantes(LAParser.Mais_constantesContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitNumero_intervalo(LAParser.Numero_intervaloContext ctx) {
-        return "";
-    }
-
-    @Override
-    public String visitIntervalo_opcional(LAParser.Intervalo_opcionalContext ctx) {
-        return "";
     }
 
     @Override
@@ -662,11 +623,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             outras_parcelas += "% " + this.visitParcela(parcela);
         }
         return outras_parcelas;
-    }
-
-    @Override
-    public String visitChamada_partes(LAParser.Chamada_partesContext ctx) {
-        return "";
     }
 
     @Override

@@ -32,6 +32,7 @@ public class LACustomErrorListener implements ANTLRErrorListener {
         return this.erros_sintaticos.toString();
     }
 
+    //Trata o caso de <EOF> e adiciona uma exceção no programa para parar a execução após a impressão do erro
     @Override
     public void syntaxError(Recognizer<?, ?> rcgnzr, Object o, int i, int i1, String string, RecognitionException re) {
         Token tk = (Token)o;
