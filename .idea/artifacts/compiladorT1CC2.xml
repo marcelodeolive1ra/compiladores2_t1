@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="compiladorT1CC2">
-    <output-path>$PROJECT_DIR$/out/artifacts/compiladorT1CC2</output-path>
-    <root id="archive" name="compiladorT1CC2.jar">
-      <element id="module-output" name="T1_CC2_IntelliJ" />
-    </root>
-  </artifact>
-</component>

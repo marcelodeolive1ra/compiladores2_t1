@@ -1,4 +1,4 @@
-// Generated from /Users/ViniciusBarbosa/Downloads/compiladores2_t1/src/ufscar/compiladores2/t1/LA.g4 by ANTLR 4.5.3
+// Generated from /Users/marcelodeoliveiradasilva/Desktop/T1_CC2_IntelliJ/src/ufscar/compiladores2/t1/LA.g4 by ANTLR 4.5.3
 package ufscar.compiladores2.t1;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
@@ -25,8 +25,8 @@ public class LALexer extends Lexer {
 		T__38=39, T__39=40, T__40=41, T__41=42, T__42=43, T__43=44, T__44=45, 
 		T__45=46, T__46=47, T__47=48, T__48=49, T__49=50, T__50=51, T__51=52, 
 		T__52=53, T__53=54, T__54=55, T__55=56, T__56=57, T__57=58, T__58=59, 
-		IDENT=60, IDENT_ERRADO=61, NUM_INT=62, NUM_ERRADO=63, NUM_REAL=64, CADEIA=65, 
-		COMENTARIO=66, ESPACO=67, COMENTARIO_ERRADO=68, ERROR=69;
+		IDENT=60, NUM_INT=61, NUM_REAL=62, CADEIA=63, COMENTARIO=64, ESPACO=65, 
+		IDENT_ERRADO=66, NUM_ERRADO=67, COMENTARIO_ERRADO=68, ERROR=69;
 	public static String[] modeNames = {
 		"DEFAULT_MODE"
 	};
@@ -39,8 +39,8 @@ public class LALexer extends Lexer {
 		"T__33", "T__34", "T__35", "T__36", "T__37", "T__38", "T__39", "T__40", 
 		"T__41", "T__42", "T__43", "T__44", "T__45", "T__46", "T__47", "T__48", 
 		"T__49", "T__50", "T__51", "T__52", "T__53", "T__54", "T__55", "T__56", 
-		"T__57", "T__58", "IDENT", "IDENT_ERRADO", "NUM_INT", "NUM_ERRADO", "NUM_REAL", 
-		"CADEIA", "COMENTARIO", "ESPACO", "COMENTARIO_ERRADO", "ERROR"
+		"T__57", "T__58", "IDENT", "NUM_INT", "NUM_REAL", "CADEIA", "COMENTARIO", 
+		"ESPACO", "IDENT_ERRADO", "NUM_ERRADO", "COMENTARIO_ERRADO", "ERROR"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
@@ -60,8 +60,8 @@ public class LALexer extends Lexer {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		null, null, null, null, null, null, null, null, null, null, null, null, 
 		null, null, null, null, null, null, null, null, null, null, null, null, 
-		"IDENT", "IDENT_ERRADO", "NUM_INT", "NUM_ERRADO", "NUM_REAL", "CADEIA", 
-		"COMENTARIO", "ESPACO", "COMENTARIO_ERRADO", "ERROR"
+		"IDENT", "NUM_INT", "NUM_REAL", "CADEIA", "COMENTARIO", "ESPACO", "IDENT_ERRADO", 
+		"NUM_ERRADO", "COMENTARIO_ERRADO", "ERROR"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -101,6 +101,14 @@ public class LALexer extends Lexer {
 	    PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
 	    Tipos tipos = new Tipos();
 	    Funcoes funcoes = new Funcoes();
+	    private final String GLOBAL = "global";
+	    private final int VARIAVEL = 1;
+	    private final int CONSTANTE = 2;
+	    private final int TIPO = 3;
+	    private final int PARCELA_UNARIO = 1;
+	    private final int PARCELA_NAO_UNARIO = 2;
+	    private final int LEIA = 1, ESCREVA = 2, SE = 3, CASO = 4, PARA = 5, ENQUANTO = 6, FACA = 7, PONTEIRO = 8,
+	            CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11;
 
 	    private void stop(String msg) {
 	        throw new ParseCancellationException(msg);
@@ -130,17 +138,17 @@ public class LALexer extends Lexer {
 	@Override
 	public void action(RuleContext _localctx, int ruleIndex, int actionIndex) {
 		switch (ruleIndex) {
-		case 60:
-			IDENT_ERRADO_action((RuleContext)_localctx, actionIndex);
-			break;
-		case 62:
-			NUM_ERRADO_action((RuleContext)_localctx, actionIndex);
-			break;
-		case 65:
+		case 63:
 			COMENTARIO_action((RuleContext)_localctx, actionIndex);
 			break;
-		case 66:
+		case 64:
 			ESPACO_action((RuleContext)_localctx, actionIndex);
+			break;
+		case 65:
+			IDENT_ERRADO_action((RuleContext)_localctx, actionIndex);
+			break;
+		case 66:
+			NUM_ERRADO_action((RuleContext)_localctx, actionIndex);
 			break;
 		case 67:
 			COMENTARIO_ERRADO_action((RuleContext)_localctx, actionIndex);
@@ -150,46 +158,58 @@ public class LALexer extends Lexer {
 			break;
 		}
 	}
-	private void IDENT_ERRADO_action(RuleContext _localctx, int actionIndex) {
-		switch (actionIndex) {
-		case 0:
-			stop("Linha "+getLine()+": erro sintatico proximo a )");
-			break;
-		}
-	}
-	private void NUM_ERRADO_action(RuleContext _localctx, int actionIndex) {
-		switch (actionIndex) {
-		case 1:
-			String variavel = getText().replaceAll("[0-9]","");
-			              stop("Linha "+getLine()+": erro sintatico proximo a " + variavel);
-			break;
-		}
-	}
 	private void COMENTARIO_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
-		case 2:
-			skip();
+		case 0:
+
+			        skip();
+			    
 			break;
 		}
 	}
 	private void ESPACO_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
+		case 1:
+
+			        skip();
+			    
+			break;
+		}
+	}
+	private void IDENT_ERRADO_action(RuleContext _localctx, int actionIndex) {
+		switch (actionIndex) {
+		case 2:
+
+			        stop("Linha " + getLine() + ": erro sintatico proximo a )");
+			    
+			break;
+		}
+	}
+	private void NUM_ERRADO_action(RuleContext _localctx, int actionIndex) {
+		switch (actionIndex) {
 		case 3:
-			skip();
+
+			        String variavel = getText().replaceAll("[0-9]","");
+			        stop("Linha " + getLine() + ": erro sintatico proximo a " + variavel);
+			    
 			break;
 		}
 	}
 	private void COMENTARIO_ERRADO_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 4:
-			 stop("Linha "+getLine()+": comentario nao fechado"); 
+
+			        stop("Linha " + getLine() + ": comentario nao fechado");
+			    
 			break;
 		}
 	}
 	private void ERROR_action(RuleContext _localctx, int actionIndex) {
 		switch (actionIndex) {
 		case 5:
-			 stop("Linha "+getLine()+": "+getText()+" - simbolo nao identificado"); 
+
+			        stop("Linha " + getLine() + ": " + getText() + " - simbolo nao identificado");
+			    
 			break;
 		}
 	}
@@ -224,12 +244,12 @@ public class LALexer extends Lexer {
 		",\3,\3,\3,\3-\3-\3-\3-\3-\3-\3.\3.\3.\3/\3/\3\60\3\60\3\61\3\61\3\62\3"+
 		"\62\3\63\3\63\3\64\3\64\3\65\3\65\3\65\3\66\3\66\3\66\3\67\3\67\3\67\3"+
 		"8\38\39\39\3:\3:\3:\3:\3;\3;\3;\3<\3<\3=\3=\7=\u01db\n=\f=\16=\u01de\13"+
-		"=\3>\3>\3>\3>\3>\3?\6?\u01e6\n?\r?\16?\u01e7\3@\6@\u01eb\n@\r@\16@\u01ec"+
-		"\3@\6@\u01f0\n@\r@\16@\u01f1\3@\3@\3A\6A\u01f7\nA\rA\16A\u01f8\3A\3A\6"+
-		"A\u01fd\nA\rA\16A\u01fe\3B\3B\7B\u0203\nB\fB\16B\u0206\13B\3B\3B\3C\3"+
-		"C\7C\u020c\nC\fC\16C\u020f\13C\3C\3C\3C\3D\3D\3D\3E\3E\7E\u0219\nE\fE"+
-		"\16E\u021c\13E\3E\3E\3E\3F\3F\3F\2\2G\3\3\5\4\7\5\t\6\13\7\r\b\17\t\21"+
-		"\n\23\13\25\f\27\r\31\16\33\17\35\20\37\21!\22#\23%\24\'\25)\26+\27-\30"+
+		"=\3>\6>\u01e1\n>\r>\16>\u01e2\3?\6?\u01e6\n?\r?\16?\u01e7\3?\3?\6?\u01ec"+
+		"\n?\r?\16?\u01ed\3@\3@\7@\u01f2\n@\f@\16@\u01f5\13@\3@\3@\3A\3A\7A\u01fb"+
+		"\nA\fA\16A\u01fe\13A\3A\3A\3A\3B\3B\3B\3C\3C\3C\3C\3C\3D\6D\u020c\nD\r"+
+		"D\16D\u020d\3D\6D\u0211\nD\rD\16D\u0212\3D\3D\3E\3E\7E\u0219\nE\fE\16"+
+		"E\u021c\13E\3E\3E\3E\3F\3F\3F\2\2G\3\3\5\4\7\5\t\6\13\7\r\b\17\t\21\n"+
+		"\23\13\25\f\27\r\31\16\33\17\35\20\37\21!\22#\23%\24\'\25)\26+\27-\30"+
 		"/\31\61\32\63\33\65\34\67\359\36;\37= ?!A\"C#E$G%I&K\'M(O)Q*S+U,W-Y.["+
 		"/]\60_\61a\62c\63e\64g\65i\66k\67m8o9q:s;u<w=y>{?}@\177A\u0081B\u0083"+
 		"C\u0085D\u0087E\u0089F\u008bG\3\2\7\5\2C\\aac|\6\2\62;C\\aac|\5\2\f\f"+
@@ -258,9 +278,9 @@ public class LALexer extends Lexer {
 		"\3\2\2\2Y\u01ad\3\2\2\2[\u01b3\3\2\2\2]\u01b6\3\2\2\2_\u01b8\3\2\2\2a"+
 		"\u01ba\3\2\2\2c\u01bc\3\2\2\2e\u01be\3\2\2\2g\u01c0\3\2\2\2i\u01c2\3\2"+
 		"\2\2k\u01c5\3\2\2\2m\u01c8\3\2\2\2o\u01cb\3\2\2\2q\u01cd\3\2\2\2s\u01cf"+
-		"\3\2\2\2u\u01d3\3\2\2\2w\u01d6\3\2\2\2y\u01d8\3\2\2\2{\u01df\3\2\2\2}"+
-		"\u01e5\3\2\2\2\177\u01ea\3\2\2\2\u0081\u01f6\3\2\2\2\u0083\u0200\3\2\2"+
-		"\2\u0085\u0209\3\2\2\2\u0087\u0213\3\2\2\2\u0089\u0216\3\2\2\2\u008b\u0220"+
+		"\3\2\2\2u\u01d3\3\2\2\2w\u01d6\3\2\2\2y\u01d8\3\2\2\2{\u01e0\3\2\2\2}"+
+		"\u01e5\3\2\2\2\177\u01ef\3\2\2\2\u0081\u01f8\3\2\2\2\u0083\u0202\3\2\2"+
+		"\2\u0085\u0205\3\2\2\2\u0087\u020b\3\2\2\2\u0089\u0216\3\2\2\2\u008b\u0220"+
 		"\3\2\2\2\u008d\u008e\7c\2\2\u008e\u008f\7n\2\2\u008f\u0090\7i\2\2\u0090"+
 		"\u0091\7q\2\2\u0091\u0092\7t\2\2\u0092\u0093\7k\2\2\u0093\u0094\7v\2\2"+
 		"\u0094\u0095\7o\2\2\u0095\u0096\7q\2\2\u0096\4\3\2\2\2\u0097\u0098\7h"+
@@ -349,29 +369,29 @@ public class LALexer extends Lexer {
 		"\u01d4\7q\2\2\u01d4\u01d5\7w\2\2\u01d5v\3\2\2\2\u01d6\u01d7\7g\2\2\u01d7"+
 		"x\3\2\2\2\u01d8\u01dc\t\2\2\2\u01d9\u01db\t\3\2\2\u01da\u01d9\3\2\2\2"+
 		"\u01db\u01de\3\2\2\2\u01dc\u01da\3\2\2\2\u01dc\u01dd\3\2\2\2\u01ddz\3"+
-		"\2\2\2\u01de\u01dc\3\2\2\2\u01df\u01e0\7]\2\2\u01e0\u01e1\5y=\2\u01e1"+
-		"\u01e2\7+\2\2\u01e2\u01e3\b>\2\2\u01e3|\3\2\2\2\u01e4\u01e6\4\62;\2\u01e5"+
-		"\u01e4\3\2\2\2\u01e6\u01e7\3\2\2\2\u01e7\u01e5\3\2\2\2\u01e7\u01e8\3\2"+
-		"\2\2\u01e8~\3\2\2\2\u01e9\u01eb\4\62;\2\u01ea\u01e9\3\2\2\2\u01eb\u01ec"+
-		"\3\2\2\2\u01ec\u01ea\3\2\2\2\u01ec\u01ed\3\2\2\2\u01ed\u01ef\3\2\2\2\u01ee"+
-		"\u01f0\t\2\2\2\u01ef\u01ee\3\2\2\2\u01f0\u01f1\3\2\2\2\u01f1\u01ef\3\2"+
-		"\2\2\u01f1\u01f2\3\2\2\2\u01f2\u01f3\3\2\2\2\u01f3\u01f4\b@\3\2\u01f4"+
-		"\u0080\3\2\2\2\u01f5\u01f7\4\62;\2\u01f6\u01f5\3\2\2\2\u01f7\u01f8\3\2"+
-		"\2\2\u01f8\u01f6\3\2\2\2\u01f8\u01f9\3\2\2\2\u01f9\u01fa\3\2\2\2\u01fa"+
-		"\u01fc\7\60\2\2\u01fb\u01fd\4\62;\2\u01fc\u01fb\3\2\2\2\u01fd\u01fe\3"+
-		"\2\2\2\u01fe\u01fc\3\2\2\2\u01fe\u01ff\3\2\2\2\u01ff\u0082\3\2\2\2\u0200"+
-		"\u0204\7$\2\2\u0201\u0203\n\4\2\2\u0202\u0201\3\2\2\2\u0203\u0206\3\2"+
-		"\2\2\u0204\u0202\3\2\2\2\u0204\u0205\3\2\2\2\u0205\u0207\3\2\2\2\u0206"+
-		"\u0204\3\2\2\2\u0207\u0208\7$\2\2\u0208\u0084\3\2\2\2\u0209\u020d\7}\2"+
-		"\2\u020a\u020c\n\5\2\2\u020b\u020a\3\2\2\2\u020c\u020f\3\2\2\2\u020d\u020b"+
-		"\3\2\2\2\u020d\u020e\3\2\2\2\u020e\u0210\3\2\2\2\u020f\u020d\3\2\2\2\u0210"+
-		"\u0211\7\177\2\2\u0211\u0212\bC\4\2\u0212\u0086\3\2\2\2\u0213\u0214\t"+
-		"\6\2\2\u0214\u0215\bD\5\2\u0215\u0088\3\2\2\2\u0216\u021a\7}\2\2\u0217"+
-		"\u0219\n\5\2\2\u0218\u0217\3\2\2\2\u0219\u021c\3\2\2\2\u021a\u0218\3\2"+
-		"\2\2\u021a\u021b\3\2\2\2\u021b\u021d\3\2\2\2\u021c\u021a\3\2\2\2\u021d"+
-		"\u021e\7\f\2\2\u021e\u021f\bE\6\2\u021f\u008a\3\2\2\2\u0220\u0221\13\2"+
-		"\2\2\u0221\u0222\bF\7\2\u0222\u008c\3\2\2\2\f\2\u01dc\u01e7\u01ec\u01f1"+
-		"\u01f8\u01fe\u0204\u020d\u021a\b\3>\2\3@\3\3C\4\3D\5\3E\6\3F\7";
+		"\2\2\2\u01de\u01dc\3\2\2\2\u01df\u01e1\4\62;\2\u01e0\u01df\3\2\2\2\u01e1"+
+		"\u01e2\3\2\2\2\u01e2\u01e0\3\2\2\2\u01e2\u01e3\3\2\2\2\u01e3|\3\2\2\2"+
+		"\u01e4\u01e6\4\62;\2\u01e5\u01e4\3\2\2\2\u01e6\u01e7\3\2\2\2\u01e7\u01e5"+
+		"\3\2\2\2\u01e7\u01e8\3\2\2\2\u01e8\u01e9\3\2\2\2\u01e9\u01eb\7\60\2\2"+
+		"\u01ea\u01ec\4\62;\2\u01eb\u01ea\3\2\2\2\u01ec\u01ed\3\2\2\2\u01ed\u01eb"+
+		"\3\2\2\2\u01ed\u01ee\3\2\2\2\u01ee~\3\2\2\2\u01ef\u01f3\7$\2\2\u01f0\u01f2"+
+		"\n\4\2\2\u01f1\u01f0\3\2\2\2\u01f2\u01f5\3\2\2\2\u01f3\u01f1\3\2\2\2\u01f3"+
+		"\u01f4\3\2\2\2\u01f4\u01f6\3\2\2\2\u01f5\u01f3\3\2\2\2\u01f6\u01f7\7$"+
+		"\2\2\u01f7\u0080\3\2\2\2\u01f8\u01fc\7}\2\2\u01f9\u01fb\n\5\2\2\u01fa"+
+		"\u01f9\3\2\2\2\u01fb\u01fe\3\2\2\2\u01fc\u01fa\3\2\2\2\u01fc\u01fd\3\2"+
+		"\2\2\u01fd\u01ff\3\2\2\2\u01fe\u01fc\3\2\2\2\u01ff\u0200\7\177\2\2\u0200"+
+		"\u0201\bA\2\2\u0201\u0082\3\2\2\2\u0202\u0203\t\6\2\2\u0203\u0204\bB\3"+
+		"\2\u0204\u0084\3\2\2\2\u0205\u0206\7]\2\2\u0206\u0207\5y=\2\u0207\u0208"+
+		"\7+\2\2\u0208\u0209\bC\4\2\u0209\u0086\3\2\2\2\u020a\u020c\4\62;\2\u020b"+
+		"\u020a\3\2\2\2\u020c\u020d\3\2\2\2\u020d\u020b\3\2\2\2\u020d\u020e\3\2"+
+		"\2\2\u020e\u0210\3\2\2\2\u020f\u0211\t\2\2\2\u0210\u020f\3\2\2\2\u0211"+
+		"\u0212\3\2\2\2\u0212\u0210\3\2\2\2\u0212\u0213\3\2\2\2\u0213\u0214\3\2"+
+		"\2\2\u0214\u0215\bD\5\2\u0215\u0088\3\2\2\2\u0216\u021a\7}\2\2\u0217\u0219"+
+		"\n\5\2\2\u0218\u0217\3\2\2\2\u0219\u021c\3\2\2\2\u021a\u0218\3\2\2\2\u021a"+
+		"\u021b\3\2\2\2\u021b\u021d\3\2\2\2\u021c\u021a\3\2\2\2\u021d\u021e\7\f"+
+		"\2\2\u021e\u021f\bE\6\2\u021f\u008a\3\2\2\2\u0220\u0221\13\2\2\2\u0221"+
+		"\u0222\bF\7\2\u0222\u008c\3\2\2\2\f\2\u01dc\u01e2\u01e7\u01ed\u01f3\u01fc"+
+		"\u020d\u0212\u021a\b\3A\2\3B\3\3C\4\3D\5\3E\6\3F\7";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

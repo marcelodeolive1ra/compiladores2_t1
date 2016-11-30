@@ -1,4 +1,4 @@
-// Generated from /Users/ViniciusBarbosa/Downloads/compiladores2_t1/src/ufscar/compiladores2/t1/LA.g4 by ANTLR 4.5.3
+// Generated from /Users/marcelodeoliveiradasilva/Desktop/T1_CC2_IntelliJ/src/ufscar/compiladores2/t1/LA.g4 by ANTLR 4.5.3
 package ufscar.compiladores2.t1;
 
 import org.antlr.v4.runtime.ParserRuleContext;
