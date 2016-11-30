@@ -105,7 +105,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitDecl_local_global(LAParser.Decl_local_globalContext ctx) {
-        // Se existirem declarações
+        // Se existirem declarações, visita as mesmas
         if (ctx != null) {
             if (ctx.declaracao_local() != null) {
                 this.visitDeclaracao_local(ctx.declaracao_local());
@@ -116,7 +116,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
-    // Procedimentos ou funções
+    // Visita Procedimentos ou funções
     @Override
     public String visitDeclaracao_global(LAParser.Declaracao_globalContext ctx) {
         if (ctx.comandos() != null) {
@@ -140,6 +140,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Visita declaracoes locais
     @Override
     public String visitDeclaracao_local(LAParser.Declaracao_localContext ctx) {
         if (ctx.tipoDec == VARIAVEL) {
@@ -179,9 +180,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                                 if (v.tipo().tipodado.compareTo(LITERAL) == 0) {
                                     variavel_em_c2 = variavel_em_c.replace(";", "[100];");
                                 }
-
-                                //tratar dimensão (para o caso de vetores)
-
                                 this.println(variavel_em_c2);
                             }
                         }
@@ -220,8 +218,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
         this.visitMais_var_aux(ctx.mais_var(), tipo);
 
-        //tratar caso de registros
-
         return "";
     }
 
@@ -238,7 +234,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         }
         return "";
     }
-
 
     @Override
     public String visitCorpo(LAParser.CorpoContext ctx) {
@@ -323,8 +318,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.println("\t}");
                     break;
                 case PARA:
-                    // Podemos usar sempre "<=" pela sintaxe da linguagem LA, em que o comando "para" inclui o último
-                    // número
+                    // estruturas de repeticao
                     this.println("\tfor (" + ctx.nameVar + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
                             "; " + ctx.nameVar + " <= " + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
                             ctx.nameVar + "++) {");
@@ -344,7 +338,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.visitComandos(ctx.comandos());
                     this.println("\t} while (" + this.visitExpressao(ctx.expressao()) + ");");
                     break;
-                case PONTEIRO: // ^ (acho que é ponteiro, precisa verificar melhor na gramática)
+                case PONTEIRO: // ponteiros
                     this.println("*" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) +
                             this.visitDimensao(ctx.dimensao()) + " = " + this.visitExpressao(ctx.expressao()) + ";");
                     break;
