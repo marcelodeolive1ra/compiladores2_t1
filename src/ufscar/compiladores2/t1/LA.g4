@@ -89,31 +89,32 @@ ERROR:
  REGRAS SEMÂNTICAS
  *********************************************************************************************************/
 
+// Regra que inicia o programa. Note que neste momento, criamos uma tabela de símbolos de escobo global.
 programa
     :
     { pilhaDeTabelas.empilhar(new TabelaDeSimbolos(GLOBAL)); }
     declaracoes 'algoritmo' corpo 'fim_algoritmo'
-    { pilhaDeTabelas.desempilhar(); }
-    ;
+;
 
 
+// Regra que define declarações. Declarações são um conjunto de uma ou mais declarações locais ou globais.
 declaracoes:
     (decl_local_global)*;
 
-//"decl_local_global" retornar para "declaracoes" um inteiro dizendo se a declaracao
-//feita é local ou global para possibilitar percorrer a arvore durante a geracao
-//de código c
+
+// Regra que permite a "escolha" do tipo de declaração: local ou global
 decl_local_global
     :
     declaracao_local |
     declaracao_global
-    ;
+;
 
 
-//"Na declaracao_local" a nova variável, constante ou novo tipo é criado e adionado
-//no topo da pilha atual. Além disso é retornado valores para "decl_local_global"
-//e para "declaracoes_locais".
-
+// Regra em que declarações locais acontecem. São possíveis três tipos de declarações locais:
+// variáveis, constantes e tipos (definição de tipos, equivalente a typedef struct em C).
+// Constantes e tipos são adicionados no topo tabela de símbolos já nesta regra. Variáveis,
+// por outro lado, são adicionadas na tabela de símbolos na regra "variavel", pois na linguagem LA
+// é possível declarar mais de uma variável do mesmo tipo na mesma "linha de declaração".
 declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel]
     :
     'declare' variavel {
@@ -132,24 +133,33 @@ declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel
     }
 ;
 
-//uma variável é do tipo "nome[expressão]" ou "nome" seguido de dois pontos e o tipo,
-//ou seja a variavel pode ser um vetor. Além disso é possível fazer a declaração de
-//N variaveis no mesmo comando. Antes da inserção da variavel na pilha é
-//verificado se esta já existe no escopo em que está sendo declarada. Caso
-//esteja, é gerada uma msg de erro, senao a váriavel é adicionada
 
+// Regra para declaração de variáveis. Como várias variáveis de um mesmo tipo (variáveis que são declaradas na mesma
+// linha na linguagem LA, separadas por vírgula) podem existir, fazemos uma lista de pares (com a estrutura Pair do
+// ANTLR) para armazenar essas variáveis.
+// A estrutura Pair do ANTLR tem dois parâmetros, "a" e "b". Estes serão utilizados para guardar o nome da variável e
+// a linha em que a variável é declarada.
+// A lista de Pairs receberá o retorno da regra "mais_var", e adicionará cada uma das variáveis da lista na tabela de
+// símbolos desde que estas ainda não tenham sido declaradas anteriormente no mesmo escopo. Caso as variáveis já existam
+// um erro semântico será registrado através de um atributo estático da classe Mensagens.
+// Mais detalhes sobre a classe Pair em http://www.antlr.org/api/Java/org/antlr/v4/runtime/misc/Pair.html
 variavel returns [String name, String tipo_variavel]
     :
     IDENT dimensao mais_var ':' tipo {
-        List<Pair> nomes = new ArrayList<Pair>();
-        nomes = $mais_var.nomes;
-        Pair pair = new Pair($IDENT.text, $IDENT.line);
-        nomes.add(0, pair);
-        for (Pair var : nomes) {
-            if (!pilhaDeTabelas.existeSimbolo(var.a.toString())) {
-                pilhaDeTabelas.topo().adicionarSimbolo(var.a.toString(), $tipo.tipodado, "variavel");
+        List<Pair> mais_variaveis = $mais_var.nomes;
+        Pair primeira_variavel = new Pair($IDENT.text, $IDENT.line);
+
+        if (pilhaDeTabelas.existeSimbolo(primeira_variavel.a.toString())) {
+            Mensagens.erroVariavelJaExiste(primeira_variavel.a.toString(), Integer.parseInt(primeira_variavel.b.toString()));
+        } else {
+            pilhaDeTabelas.topo().adicionarSimbolo(primeira_variavel.a.toString(), $tipo.tipodado, "variavel");
+        }
+
+        for (Pair variavel: mais_variaveis) {
+            if (pilhaDeTabelas.existeSimbolo(variavel.a.toString())) {
+                Mensagens.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
             } else {
-                Mensagens.erroVariavelJaExiste(var.a.toString(), Integer.parseInt(var.b.toString()));
+                pilhaDeTabelas.topo().adicionarSimbolo(variavel.a.toString(), $tipo.tipodado, "variavel");
             }
         }
         $name = $IDENT.text;
@@ -158,10 +168,12 @@ variavel returns [String name, String tipo_variavel]
 ;
 
 
-//Permite que seja declarada mais de uma variável do mesmo tipo. Retorna para
-//"variavel" uma lista contendo em cada posicao o nome da variavel e a linha que
-//ela está, para que o semantico utilize essa informação quando houver um erro.
-
+// Regra que complementa a regra anterior ("variavel"), permitindo que mais variáveis do mesmo tipo sejam declaradas
+// em uma única linha na linguagem LA. Cada variável "encontrada" é adicionada a uma lista que será retornada para a
+// regra "variavel". A lista guarda informação do nome da variável e da linha em que a mesma é declarada (pois essa
+// informação é necessária para reportar erros semânticos.
+// Se não houver nenhuma variável adicional, a lista retornada é vazia, permitindo fácil verificação
+// na geração de código.
 mais_var returns [List<Pair> nomes]
     @init {
         $nomes = new ArrayList<Pair>();
@@ -169,17 +181,18 @@ mais_var returns [List<Pair> nomes]
     :
     (
         ',' IDENT dimensao {
-            Pair pair = new Pair($IDENT.text, $IDENT.line);
-            $nomes.add(pair);
+            Pair variavel = new Pair($IDENT.text, $IDENT.line);
+            $nomes.add(variavel);
         }
     )*
 ;
 
-//Identificador pode iniciar com 0 ou mais ^ seguido de um identificador,
-//Podendo ou não ter uma dimensão e podendo ou não ser composto de outros identificadores
-//Além disso verifica-se se o identificador criado já existe na tabela de simbolos
-//do escopo corrente.
 
+// Regra que define identificadores para uso das variáveis declaradas anteriormente. A checagem semântica é realizada
+// verificando se o nome do identificador existe na tabela de símbolos. Esta regra permite identificadores serem
+// referenciados com ponteiros, com índices (para o caso de vetores) e com mais identificadores (para acesso a atributos
+// de registros. Note que para registros, é necessário checar tanto se a variável em si existe, bem como o atributo
+// desta variável (formando assim o identificador completo).
 identificador returns [String nome_variavel]
     :
     ponteiros_opcionais IDENT dimensao outros_ident {
@@ -187,38 +200,36 @@ identificador returns [String nome_variavel]
 
         if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
             Mensagens.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
-        } else if (!$outros_ident.id.equals("")) {
-            String var = $IDENT.text + $outros_ident.id;
-            String tipo = pilhaDeTabelas.getVarTipo($IDENT.text);
-            String atr = $outros_ident.id.substring(1);
-
-            if (!tipos.existeAtributo(tipo, atr)) {
-                Mensagens.erroVariavelNaoExiste(var, $IDENT.line);
+        } else if ($outros_ident.id.compareTo("") != 0) {
+            if (!tipos.existeAtributo(pilhaDeTabelas.getVarTipo($IDENT.text), $outros_ident.nome_atributo)) {
+                Mensagens.erroVariavelNaoExiste($IDENT.text + $outros_ident.id, $IDENT.line);
             }
         }
     }
 ;
 
-//ponteiros_opcionais são compostos por zero ou mais ^
+// Regra para tratatamento dos ponteiros, que são opcionais para identificadores.
+// O único retorno é a quantidade de ponteiros a serem adicionados antes do identificador.
 ponteiros_opcionais returns [String ponteiros]
     @init {
         $ponteiros = "";
     }
-    : ('^' { $ponteiros += "^"; })*
+    :
+    ('^' { $ponteiros += "^"; })*
 ;
 
-//outros_ident permite a separação dos identificadores por virgula
-outros_ident returns [String id, String name, boolean temAtributo]
+// Regra que permite definir identificadores compostos, com o uso do ponto ".".
+outros_ident returns [String id, String nome_atributo, boolean temAtributo]
     @init {
         $id = "";
-        $name = "";
+        $nome_atributo = "";
         $temAtributo = false;
     }
     :
     (
         '.' ponteiros_opcionais IDENT dimensao {
             $id += "." + $IDENT.text;
-            $name = $IDENT.text;
+            $nome_atributo = $IDENT.text;
             $temAtributo = true;
         }
     )*
@@ -324,11 +335,9 @@ variavel_registro returns [List<Pair> atributos]
     }
     :
     IDENT dimensao mais_var_registro ':' tipo {
-        Pair pair = new Pair($IDENT.text, $tipo.tipodado);
-        $atributos.add(pair);
+        $atributos.add(new Pair($IDENT.text, $tipo.tipodado));
         for (String atributo : $mais_var_registro.atributos) {
-            Pair npair = new Pair(atributo, $tipo.tipodado);
-            $atributos.add(npair);
+            $atributos.add(new Pair(atributo, $tipo.tipodado));
         }
     }
 ;
@@ -354,14 +363,14 @@ declaracao_global
     :
     'procedimento' IDENT {
         pilhaDeTabelas.topo().adicionarSimbolo($IDENT.text, "void", "procedimento");
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("procedimento_"+$IDENT.text));
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("procedimento_" + $IDENT.text));
         funcoes.addFuncao($IDENT.text);
     } '(' parametros_opcional ')' declaracoes_locais comandos 'fim_procedimento' {
         pilhaDeTabelas.desempilhar();
     } |
     'funcao' IDENT {
         funcoes.addFuncao($IDENT.text);
-        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("funcao_"+$IDENT.text));
+        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("funcao_" + $IDENT.text));
     } '(' parametros_opcional ')' ':' tipo_estendido {
         pilhaDeTabelas.tabelaGlobal().adicionarSimbolo($IDENT.text, $tipo_estendido.tipodado, "funcao");
     } declaracoes_locais comandos 'fim_funcao' {
@@ -471,7 +480,7 @@ cmd returns [ int tipoCmd, String nome_variavel,  String tipo_variavel]
                       Mensagens.erroVariavelNaoCompativel($IDENT.text + "[" + $atribuicao.indice + "]", $IDENT.line);
                 } else if (!$atribuicao.name.equals("")) {
                      if (!tipos.getTipoAtr($atribuicao.name).equals($atribuicao.type)) {
-                        if(!(tipos.getTipoAtr($atribuicao.name).equals("real") && $atribuicao.type.equals("inteiro"))) {
+                        if (!(tipos.getTipoAtr($atribuicao.name).equals("real") && $atribuicao.type.equals("inteiro"))) {
                             if (!tipos.getTipoAtr($atribuicao.name).equals(pilhaDeTabelas.getTypeData($IDENT.text))) {
                                 Mensagens.erroVariavelNaoCompativel($IDENT.text + "." + $atribuicao.name, $IDENT.line);
                             }
@@ -531,7 +540,7 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
     outros_ident dimensao '<-' expressao {
         $type = $expressao.type;
 
-        if ($outros_ident.name.equals("")) {
+        if ($outros_ident.nome_atributo.equals("")) {
             if (!$expressao.name.equals("")) {
                  $compativel = false;
 
@@ -539,11 +548,13 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
                     $name = $expressao.name;
                  }
             } else {
-                $compativel = $expressao.compativel; $type = $expressao.type;
+                $compativel = $expressao.compativel;
+                $type = $expressao.type;
             }
         } else {
-            $compativel = false; $type = $expressao.type;
-            $name = $outros_ident.name;
+            $compativel = false;
+            $type = $expressao.type;
+            $name = $outros_ident.nome_atributo;
         }
         $indice = $dimensao.indice;
     }
@@ -583,11 +594,12 @@ op_unario:
 
 //Expressẽos aritiméticas são compostas por um ou mais termos separados por virgulas
 exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean temAtributo]
-@init {
-    $compativel = false;
-    $type = "";
-    $name = "";
-    $temAtributo=false;}
+    @init {
+        $compativel = false;
+        $type = "";
+        $name = "";
+        $temAtributo=false;
+    }
     :
     termo outros_termos {
         $name = $termo.name;
@@ -706,27 +718,25 @@ parcela_unario returns [String type, int indice, String name, int tipoParc, bool
         $tipoParc = 1;
     } |
     IDENT chamada_partes {
-        if(!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
+        if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
             Mensagens.erroVariavelNaoExiste($IDENT.text+$chamada_partes.id, $IDENT.line);
         }
 
         $type = pilhaDeTabelas.getTypeData($IDENT.text);
-        if(!$chamada_partes.tipos.isEmpty()) {
+        if (!$chamada_partes.tipos.isEmpty()) {
             List<String> tipos = funcoes.getFuncTipos($IDENT.text);
             List<String> params = $chamada_partes.tipos;
             boolean erro = false;
 
-            if(tipos != null) {
-                for(int i = 1; i < tipos.size(); i++) {
+            if (tipos != null) {
+                for(int i = 1; i < tipos.size() && !erro; i++) {
                     try {
-                        if(!tipos.get(i).equals(params.get(i)) && !params.get(i).equals("")) {
+                        if (!tipos.get(i).equals(params.get(i)) && !params.get(i).equals("")) {
                             erro = true;
-                            break;
                         }
                     } catch (IndexOutOfBoundsException e) {
                           erro = true;
                     }
-
                 }
             }
             if (erro) {
@@ -761,7 +771,7 @@ parcela_nao_unario returns [String type, String name]
     :
     '&' IDENT outros_ident dimensao {
         $type = "";
-        $name = $outros_ident.name;
+        $name = $outros_ident.nome_atributo;
     } |
     CADEIA {
         $type = "literal";
@@ -790,7 +800,7 @@ chamada_partes returns [String id, List<String> tipos, String name, int tipoCham
     ')' |
     outros_ident dimensao {
         $id = $outros_ident.id;
-        $name = $outros_ident.name;
+        $name = $outros_ident.nome_atributo;
         $temAtributo = $outros_ident.temAtributo;
         $tipoChamada = 2;
         } |
