@@ -40,7 +40,7 @@ public class LACustomErrorListener implements ANTLRErrorListener {
         if (text.contentEquals("<EOF>")) {
             text = "EOF";
         }
-        this.erros_sintaticos.println("Linha "+i+": erro sintatico proximo a "+text);
+        this.erros_sintaticos.println("Linha " + i +": erro sintatico proximo a " + text);
 
         throw new ParseCancellationException();
     }

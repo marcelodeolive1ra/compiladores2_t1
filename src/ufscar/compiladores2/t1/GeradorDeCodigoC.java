@@ -13,7 +13,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     // Constantes para deixar o código mais legível (a análise semântica retorna números que identificam os comandos)
     private final int LEIA = 1, ESCREVA = 2, SE = 3, CASO = 4, PARA = 5, ENQUANTO = 6, FACA = 7, PONTEIRO = 8,
-        CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11, VARIAVEL = 1, CONSTANTE = 2, REGISTRO = 3, PARCELA_UNARIO = 1;
+            CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11, VARIAVEL = 1, CONSTANTE = 2, TIPO = 3, PARCELA_UNARIO = 1;
     private final String LITERAL = "literal", REAL = "real", INTEIRO = "inteiro", LOGICO = "logico";
 
     // O construtor desta classe inicializa a string que armazenará em memória o código C gerado ao processar a
@@ -22,8 +22,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         this.codigo_c = "";
     }
 
-    // Esta função é adiciona texto à variável que guarda o código C que é gerado durante a avaliação da árvore
-    // gerada pelo parser
+    // Este método adiciona texto à variável que guarda o código C que é gerado durante a avaliação da AST
     public void println(String texto) {
         this.codigo_c += (texto + "\n");
     }
@@ -35,75 +34,42 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     // Esta função realiza a conversão dos tipos da linguagem LA para tipos equivalentes em linguagem C
     public String getTipoDeDadoEmC(String tipo_em_LA) {
-        String tipo_em_c = "";
-
-        switch (tipo_em_LA) {
-            case LITERAL:
-                tipo_em_c = "char";
-                break;
-            case REAL:
-                tipo_em_c = "float";
-                break;
-            case INTEIRO:
-                tipo_em_c = "int";
-                break;
-            case LOGICO:
-                tipo_em_c = "bool";
-                break;
-            case INTEIRO + "^":
-                tipo_em_c = "int*";
-                break;
-            case REAL + "^":
-                tipo_em_c = "float*";
-                break;
-            case LITERAL + "^":
-                tipo_em_c = "char*";
-                break;
-            default:
-                tipo_em_c = tipo_em_LA; // registros
-                break;
-        }
-
-        return tipo_em_c;
+        return tipo_em_LA.replace(INTEIRO, "int").replace(REAL, "float").replace(LOGICO, "bool").
+                replace(LITERAL, "char").replace("^", "*");
     }
 
-    // Início da geração de código começa neste método
+    // Início da geração de código começa neste método, sendo inclusa a estrutura básica do programa C, e então,
+    // chama-se o método que percorrerá as declarações globais do programa e em seguida o corpo do programa
     @Override
     public String visitPrograma(LAParser.ProgramaContext ctx) {
-        this.println("/* Código gerado automaticamente pelo compilador da linguagem LA */");
-        this.println("");
-        this.println("#include <stdio.h>");
-        this.println("#include <stdlib.h>");
-        this.println("");
+        this.println("/* Código gerado automaticamente pelo compilador da linguagem LA */\n");
+        this.println("#include <stdio.h>\n#include <stdlib.h>\n");
 
-        // Declarações globais do programa
         this.visitDeclaracoes(ctx.declaracoes());
 
         this.println("int main() {");
 
-        // Visitando o corpo do programa
         this.visitCorpo(ctx.corpo());
 
-        this.println("\n\treturn 0;");
-        this.print("}");
+        this.print("\n\treturn 0;\n}");
 
         return "";
     }
 
-    // Declarações globais do programa
+    // Método que visita as declarações do programa, se existirem
     @Override
     public String visitDeclaracoes(LAParser.DeclaracoesContext ctx) {
         if (ctx != null) {
-            for (LAParser.Decl_local_globalContext declaracao: ctx.decl_local_global()) {
-                visitDecl_local_global(declaracao);
+            for (LAParser.Decl_local_globalContext declaracao : ctx.decl_local_global()) {
+                this.visitDecl_local_global(declaracao);
             }
         }
         return "";
     }
 
+    // Método que visita as declarações locais ou globais, se existirem
     @Override
     public String visitDecl_local_global(LAParser.Decl_local_globalContext ctx) {
-        // Se existirem declarações, visita as mesmas
         if (ctx != null) {
             if (ctx.declaracao_local() != null) {
                 this.visitDeclaracao_local(ctx.declaracao_local());
@@ -114,35 +80,24 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
-    // Visita Procedimentos ou funções
+    // Método que visita declarações globais, que, no caso da linguagem LA, inclue funções e procedimentos
     @Override
     public String visitDeclaracao_global(LAParser.Declaracao_globalContext ctx) {
-        if (ctx.comandos() != null) {
-            // Declaração de procedimento
-            if (ctx.tipo_estendido() == null) {
-                this.print("void " + ctx.IDENT().getText() + "(");
-                this.visitParametros_opcional(ctx.parametros_opcional());
-                this.println(") {");
-                this.visitComandos(ctx.comandos());
-                this.println("}\n");
-            } else {
-                // Declaração de função, logo é necessário verificar o tipo de retorno
-                this.visitTipo_estendido(ctx.tipo_estendido());
-                this.print(ctx.IDENT().getText() + "(");
-                this.visitParametros_opcional(ctx.parametros_opcional());
-                this.println(") {");
-                this.visitComandos(ctx.comandos());
-                this.println("}\n");
-            }
-        }
+        this.print((ctx.tipo_estendido() == null ? "void ": "") + ctx.IDENT().getText() + "(");
+        this.visitParametros_opcional(ctx.parametros_opcional());
+        this.println(") {");
+        this.visitComandos(ctx.comandos());
+        this.println("}\n");
         return "";
     }
 
-    // Visita declaracoes locais
+    // Método que visita declarações locais, que podem ser variáveis, constantes ou tipos
+    // Para o caso de tipos, é necessário visitar cada variável que compõe o tipo
+    // Observação a respeito do tipo literal: em C, foi considerado um literal como um vetor de char de tamanho 100
     @Override
     public String visitDeclaracao_local(LAParser.Declaracao_localContext ctx) {
         if (ctx.tipo_declaracao == VARIAVEL) {
-            if(ctx.tipo_variavel.compareTo("registro") == 0) {
+            if (ctx.tipo_variavel.compareTo("registro") == 0) {
                 this.println("\tstruct {");
                 this.visitRegistro(ctx.variavel().tipo().registro());
                 this.println("\t} " + ctx.variavel().IDENT().getText() + ";");
@@ -151,133 +106,106 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             }
         } else if (ctx.tipo_declaracao == CONSTANTE) {
             this.println("#define " + ctx.IDENT.getText() + " " + visitValor_constante(ctx.valor_constante()));
-        } else {
-            if (ctx.tipo_declaracao == REGISTRO) {
-                if (ctx.tipo().registro() != null) {
-                    this.println("typedef struct " + ctx.IDENT.getText() + " {");
+        } else if (ctx.tipo_declaracao == TIPO) {
+            if (ctx.tipo().registro() != null) {
+                this.println("typedef struct " + ctx.IDENT.getText() + " {");
 
-                    int i = 0;
-                    for (LAParser.Variavel_registroContext v : ctx.tipo().registro().variavel_registro()) {
-                        String tipo = this.getTipoDeDadoEmC(v.tipo().tipodado);
+                for (LAParser.Variavel_registroContext variavel : ctx.tipo().registro().variavel_registro()) {
+                    String tipo = this.getTipoDeDadoEmC(variavel.tipo().tipodado);
 
-                        String variavel_em_c = "\t" + tipo + " " + v.IDENT() + ';';
+                    this.println("\t" + tipo + " " + variavel.IDENT() +
+                            (variavel.tipo().tipodado.compareTo(LITERAL) == 0 ? "[100]" : "") + ";");
 
-                        // Tratamento do caso de strings em C, que são tratadas como vetores de char
-                        if (v.tipo().tipodado.compareTo(LITERAL) == 0) {
-                            variavel_em_c = variavel_em_c.replace(";", "[100];");
-                        }
-
-                        this.println(variavel_em_c);
-
-                        // Mais variáveis declaradas na mesma linha
-                        if (v.mais_var_registro() != null) {
-                            for (String v1: v.mais_var_registro().atributos) {
-                                String variavel_em_c2 = "\t" + tipo + " " + v1 + ';';
-
-                                // Tratamento do caso de strings em C, que são tratadas como vetores de char
-                                if (v.tipo().tipodado.compareTo(LITERAL) == 0) {
-                                    variavel_em_c2 = variavel_em_c.replace(";", "[100];");
-                                }
-                                this.println(variavel_em_c2);
-                            }
+                    // Quando várias variáveis são declaradas na mesma linha no programa em linguagem LA,
+                    // as mesmas são definidas em linhas separadas em C
+                    if (variavel.mais_var_registro() != null) {
+                        for (String _variavel : variavel.mais_var_registro().atributos) {
+                            this.println("\t" + tipo + " " + _variavel +
+                                    ((variavel.tipo().tipodado.compareTo(LITERAL) == 0) ? "[100]" : "") + ";");
                         }
                     }
-                    this.println("} " + ctx.IDENT.getText() + ";\n");
                 }
+                this.println("} " + ctx.IDENT.getText() + ";\n");
             }
         }
         return "";
     }
 
+    // Método que visita as declarações locais do programa
     @Override
     public String visitDeclaracoes_locais(LAParser.Declaracoes_locaisContext ctx) {
-        for (LAParser.Declaracao_localContext declaracao: ctx.declaracao_local()) {
+        for (LAParser.Declaracao_localContext declaracao : ctx.declaracao_local()) {
             this.visitDeclaracao_local(declaracao);
         }
         return "";
     }
 
+    // Método que visita as variáveis declaradas, incluindo suas dimensões, se houverem (para suportar vetores)
+    @Override
     public String visitVariavel(LAParser.VariavelContext ctx) {
         String tipo = getTipoDeDadoEmC(ctx.tipo_variavel);
+        String dimensao = (ctx.tipo_variavel.compareTo(LITERAL) == 0) ? "[100]" : this.visitDimensao(ctx.dimensao());
 
-        String variavel_em_c = "\t" + tipo + " " + ctx.IDENT().getText() + ';';
-
-        // Tratamento do caso de strings em C, que são tratadas como vetores de char
-        if (ctx.tipo_variavel.compareTo(LITERAL) == 0) {
-            variavel_em_c = variavel_em_c.replace(";", "[100];");
-        }
-
-        String dimensao = this.visitDimensao(ctx.dimensao());
-        if (dimensao.compareTo("") != 0) {
-            variavel_em_c = variavel_em_c.replace(";", dimensao + ";");
-        }
-
-        this.println(variavel_em_c);
-
+        this.println("\t" + tipo + " " + ctx.IDENT().getText() + dimensao + ';');
         this.visitMais_var_aux(ctx.mais_var(), tipo);
-
         return "";
     }
 
-    public String visitMais_var(LAParser.Mais_varContext ctx) {
-        for (TerminalNode v : ctx.IDENT()) {
-            this.print(", " + v.getText() + ";");
-        }
-        return "";
-    }
-
+    // Método que visita eventuais mais variáveis que possam ter sido declaradas numa mesma linha na linguagem LA
+    // Neste método, ao invés de fazer override do método da classe LABaseVisitor, optamos por receber um parâmetro
+    // adicional: o tipo. Desta forma, em C fazemos a declaração de variáveis uma por linha
     public String visitMais_var_aux(LAParser.Mais_varContext ctx, String tipo_variavel) {
-        for (TerminalNode v: ctx.IDENT()) {
+        for (TerminalNode v : ctx.IDENT()) {
             this.println("\t" + tipo_variavel + " " + v.getText() + ";");
         }
         return "";
     }
 
+    // Método que visita o corpo do programa, sendo primeiro as declarações locais e posteriormente os comandos
     @Override
     public String visitCorpo(LAParser.CorpoContext ctx) {
         if (ctx != null) {
-            // Visita primeiro as declarações locais
             this.visitDeclaracoes_locais(ctx.declaracoes_locais());
-            // E depois a lista de comandos do programa
             this.visitComandos(ctx.comandos());
         }
         return "";
     }
 
+    // Método que visita comandos individuais, dada uma lista de comandos
     @Override
     public String visitComandos(LAParser.ComandosContext ctx) {
         if (ctx != null) {
-            // Dados os vários comandos, visitar cada um deles
-            for (LAParser.CmdContext comando: ctx.cmd()) {
+            for (LAParser.CmdContext comando : ctx.cmd()) {
                 this.visitCmd(comando);
             }
         }
         return "";
     }
 
+    // Método que visita comandos individuais, de acordo com seu tipo
     @Override
     public String visitCmd(LAParser.CmdContext ctx) {
         if (ctx != null) {
-            switch(ctx.tipoCmd) {
+            switch (ctx.tipoCmd) {
                 case LEIA:
-                    if(ctx.tipo_variavel.compareTo(LITERAL) == 0) {
+                    if (ctx.tipo_variavel.compareTo(LITERAL) == 0) { // trata o caso de literais
                         this.println("\tgets(" + ctx.nome_variavel + ");");
-                    } else {
+                    } else { // trata o caso de demais variáveis de outros tipos
                         this.print("\tscanf(\"");
-                        this.print((ctx.tipo_variavel.compareTo(INTEIRO) == 0) ? "%d": "%f");
+                        this.print((ctx.tipo_variavel.compareTo(INTEIRO) == 0) ? "%d" : "%f");
                         this.println("\", &" + ctx.nome_variavel + ");");
 
                         if (ctx.mais_ident() != null) {
-                            for (LAParser.IdentificadorContext i : ctx.mais_ident().identificador()) {
-                                this.print(", &" + i.nome_variavel);
+                            for (LAParser.IdentificadorContext identificador : ctx.mais_ident().identificador()) {
+                                this.print(", &" + identificador.nome_variavel);
                             }
                         }
                     }
                     break;
                 case ESCREVA:
-                    this.print("\tprintf(\"");
-                    this.print((ctx.tipo_variavel.compareTo(LITERAL) == 0) ? "%s" : (ctx.tipo_variavel.compareTo(INTEIRO) == 0) ? "%d":
-                            (ctx.tipo_variavel.compareTo(REAL) == 0) ? "%f" : "%s");
+                    this.print("\tprintf(\"" + ((ctx.tipo_variavel.compareTo(LITERAL) == 0) ?
+                            "%s" : (ctx.tipo_variavel.compareTo(INTEIRO) == 0) ? "%d" :
+                            (ctx.tipo_variavel.compareTo(REAL) == 0) ? "%f" : "%s"));
                     this.println("\", " + this.visitExpressao(ctx.expressao()) + ");");
 
                     String[] mais_expressoes = this.visitMais_expressao_aux(ctx.mais_expressao());
@@ -285,16 +213,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     for (int i = 0; i < mais_expressoes.length; i++) {
                         String tipo = ctx.mais_expressao().tipos.get(i);
 
-                        if (tipo.compareTo(LITERAL) == 0) {
-                            this.print("\tprintf(\"%s\", ");
-                        } else if (tipo.compareTo(REAL) == 0) {
-                            this.print("\tprintf(\"%f\", ");
-                        } else if (tipo.compareTo(INTEIRO) == 0) {
-                            this.print("\tprintf(\"%d\", ");
-                        } else {
-                            this.print("\tprintf(\"%d\", ");
-                        }
-                        this.println(mais_expressoes[i] + ");");
+                        this.print("\tprintf(\"" +
+                                ((tipo.compareTo(LITERAL) == 0) ? "%s" :
+                                        (tipo.compareTo(REAL) == 0) ? "%f" : "%d") + "\", " + mais_expressoes[i] + ");\n");
                     }
                     break;
                 case SE:
@@ -305,7 +226,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.visitSenao_opcional(ctx.senao_opcional());
                     break;
                 case CASO:
-                    this.println("\tswitch (" + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +  ") {");
+                    this.println("\tswitch (" + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) + ") {");
                     this.visitSelecao(ctx.selecao());
                     this.println("\tdefault:");
                     if (ctx.senao_opcional().comandos() != null) {
@@ -316,7 +237,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.println("\t}");
                     break;
                 case PARA:
-                    // estruturas de repeticao
                     this.println("\tfor (" + ctx.nome_variavel + " = " + this.visitExp_aritmetica(ctx.exp_aritmetica(0)) +
                             "; " + ctx.nome_variavel + " <= " + this.visitExp_aritmetica(ctx.exp_aritmetica(1)) + "; " +
                             ctx.nome_variavel + "++) {");
@@ -336,23 +256,21 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                     this.visitComandos(ctx.comandos());
                     this.println("\t} while (" + this.visitExpressao(ctx.expressao()) + ");");
                     break;
-                case PONTEIRO: // ponteiros
+                case PONTEIRO:
                     this.println("*" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) +
                             this.visitDimensao(ctx.dimensao()) + " = " + this.visitExpressao(ctx.expressao()) + ";");
                     break;
-                case CHAMADA: // chamada [de função ou procedimento]
+                case CHAMADA: // chamada de função ou procedimento
                     this.print(ctx.IDENT().getText());
                     this.visitChamada(ctx.chamada());
                     this.println(";");
                     break;
                 case ATRIBUICAO: // atribuição de variável
-                    if (ctx.atribuicao().type.compareTo(LITERAL) != 0) {
-                        // Variável não é do tipo literal
+                    if (ctx.atribuicao().type.compareTo(LITERAL) != 0) { // Variável não é do tipo literal
                         this.print("\t" + ctx.IDENT().getText());
                         this.visitAtribuicao(ctx.atribuicao());
                         this.println(";");
-                    } else {
-                        // Variável é literal
+                    } else { // Variável é literal, atribuição deve ser com strcpy
                         this.println("\tstrcpy(" + ctx.IDENT().getText() + this.visitOutros_ident(ctx.atribuicao().outros_ident()) +
                                 this.visitDimensao(ctx.dimensao()) + ", " +
                                 this.visitExpressao(ctx.atribuicao().expressao()) + ");");
@@ -368,53 +286,60 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que adiciona os asteriscos que indicam que uma variável é um ponteiro
     @Override
     public String visitPonteiros_opcionais(LAParser.Ponteiros_opcionaisContext ctx) {
         this.print(ctx.ponteiros + " ");
         return "";
     }
 
+    // Método que verifica se uma variável possui outros identificadores (caso dos registros)
     @Override
     public String visitOutros_ident(LAParser.Outros_identContext ctx) {
         String outros_identificadores = "";
         if (ctx != null) {
-            List<TerminalNode> idents = ctx.IDENT();
+            List<TerminalNode> identificadores = ctx.IDENT();
             List<LAParser.DimensaoContext> dimensao = ctx.dimensao();
 
-            for (int i = 0; i < idents.size(); i++) {
-                outros_identificadores += "." + idents.get(i).getText() + this.visitDimensao(dimensao.get(i));
+            for (int i = 0; i < identificadores.size(); i++) {
+                outros_identificadores += "." + identificadores.get(i).getText() + this.visitDimensao(dimensao.get(i));
             }
         }
         return outros_identificadores;
     }
 
+    // Método que verifica a dimensão de uma variável (no caso, vetores)
     @Override
     public String visitDimensao(LAParser.DimensaoContext ctx) {
-        String dim = "";
+        String dimensao = "";
         if (ctx != null) {
             for (LAParser.Exp_aritmeticaContext exp : ctx.exp_aritmetica()) {
-                dim += "[" + this.visitExp_aritmetica(exp) + "]";
+                dimensao += "[" + this.visitExp_aritmetica(exp) + "]";
             }
         }
-        return dim;
+        return dimensao;
     }
 
+    // Método que visita tipos customizados
     @Override
     public String visitTipo(LAParser.TipoContext ctx) {
         return this.visitRegistro(ctx.registro());
     }
 
+    // Método que verifica o tipo de uma variável, quando esta é de um tipo básico (literal, real, inteiro)
     @Override
     public String visitTipo_basico(LAParser.Tipo_basicoContext ctx) {
         this.print((ctx.tipodado.compareTo(LITERAL) == 0) ? "char*" : this.getTipoDeDadoEmC(ctx.tipodado));
         return "";
     }
 
+    // Método que visita os identificadores de forma a obter seus tipos
     @Override
     public String visitTipo_basico_ident(LAParser.Tipo_basico_identContext ctx) {
         return this.visitTipo_basico(ctx.tipo_basico());
     }
 
+    // Método que visita os identificadores e verifica se os mesmos são ponteiros
     @Override
     public String visitTipo_estendido(LAParser.Tipo_estendidoContext ctx) {
         this.visitTipo_basico_ident(ctx.tipo_basico_ident());
@@ -422,39 +347,36 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que obtém o valor de uma constante
     @Override
     public String visitValor_constante(LAParser.Valor_constanteContext ctx) {
         return ctx.getText();
     }
 
+    // Método que visita cada uma das variáveis de um registro
     @Override
     public String visitRegistro(LAParser.RegistroContext ctx) {
-        for (LAParser.Variavel_registroContext variavel: ctx.variavel_registro()) {
+        for (LAParser.Variavel_registroContext variavel : ctx.variavel_registro()) {
             this.visitVariavel_registro(variavel);
         }
         return "";
     }
 
+    // Método que converte para C cada uma variável de registro
     @Override
     public String visitVariavel_registro(LAParser.Variavel_registroContext ctx) {
-        if (ctx.tipo.tipodado.compareTo(LITERAL) == 0) {
-            this.println("\t\t" + this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + "[100]" + ";");
-        } else {
-            this.println("\t\t" + this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() + ";");
-        }
+        this.println("\t\t" + this.getTipoDeDadoEmC(ctx.tipo.tipodado) + " " + ctx.IDENT().getText() +
+                ((ctx.tipo.tipodado.compareTo(LITERAL) == 0) ? "[100]" : "") + ";");
         return "";
     }
 
-    @Override
-    public String visitMais_var_registro(LAParser.Mais_var_registroContext ctx) {
-        return "";
-    }
-
+    // Método que verifica se uma função ou procedimento possui parâmetros. Se possuir, visita-os
     @Override
     public String visitParametros_opcional(LAParser.Parametros_opcionalContext ctx) {
         return (ctx.parametro() != null) ? this.visitParametro(ctx.parametro()) : "";
     }
 
+    // Método que visita os parâmetros de uma função ou procedimento
     @Override
     public String visitParametro(LAParser.ParametroContext ctx) {
         this.visitTipo_estendido(ctx.tipo_estendido());
@@ -462,18 +384,25 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita os identificadores de um parâmetro e se eles são ponteiros
     @Override
     public String visitIdent_param(LAParser.Ident_paramContext ctx) {
         this.visitPonteiros_opcionais(ctx.ponteiros_opcionais());
-        this.print(ctx.IDENT().getText() + visitDimensao(ctx.dimensao()) + visitOutros_ident(ctx.outros_ident()));
+        this.print(ctx.IDENT().getText() + this.visitDimensao(ctx.dimensao()) + this.visitOutros_ident(ctx.outros_ident()));
         return "";
     }
 
+    // NÃO REMOVER
+    // Este método, embora apenas retorne uma string vazia, é MUITO IMPORTANTE!
+    // Ele evita que os argumentos de uma chamada de função ou procedimento não terminem com o texto "null"
     @Override
     public String visitMais_expressao(LAParser.Mais_expressaoContext ctx) {
         return "";
     }
 
+    // Este método é uma pequena modificação do visitMais_expressao. 
+    // Para facilitar a geração de código, um vetor de strings é retornado com código C para cada uma das possíveis 
+    // mais expressões encontradas
     public String[] visitMais_expressao_aux(LAParser.Mais_expressaoContext ctx) {
         String[] mais_expressoes = new String[ctx.expressao().size()];
         int i = 0;
@@ -561,7 +490,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         int i = 0;
         String outros_termos = "";
 
-        for (LAParser.Op_adicaoContext operador: ctx.op_adicao()) {
+        for (LAParser.Op_adicaoContext operador : ctx.op_adicao()) {
             outros_termos += " " + this.visitOp_adicao(operador) + " " + this.visitTermo(ctx.termo().get(i++));
         }
         return outros_termos;
@@ -577,7 +506,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         int i = 0;
         String outros_fatores = "";
 
-        for (LAParser.Op_multiplicacaoContext operador: ctx.op_multiplicacao()) {
+        for (LAParser.Op_multiplicacaoContext operador : ctx.op_multiplicacao()) {
             outros_fatores += this.visitOp_multiplicacao(operador) + this.visitFator(ctx.fator().get(i++));
         }
         return outros_fatores;
@@ -585,7 +514,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParcela(LAParser.ParcelaContext ctx) {
-        return (ctx.tipo_parcela == PARCELA_UNARIO) ? this.visitOp_unario(ctx.op_unario()) + this.visitParcela_unario(ctx.parcela_unario()):
+        return (ctx.tipo_parcela == PARCELA_UNARIO) ? this.visitOp_unario(ctx.op_unario()) + this.visitParcela_unario(ctx.parcela_unario()) :
                 this.visitParcela_nao_unario(ctx.parcela_nao_unario());
     }
 
@@ -595,9 +524,11 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
             return "* " + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
         } else if (ctx.tipoParc == 2) {
             return ctx.IDENT().getText() +
-                    ((ctx.chamada_partes().tipoChamada == 1) ? "(" + this.visitExpressao(ctx.chamada_partes().expressao()) +
+                    ((ctx.chamada_partes().tipoChamada == 1) ?
+                            "(" + this.visitExpressao(ctx.chamada_partes().expressao()) +
                             this.visitMais_expressao(ctx.chamada_partes().mais_expressao()) + ")" :
-                            ((ctx.chamada_partes().tipoChamada == 2) ? this.visitOutros_ident(ctx.chamada_partes().outros_ident()) +
+                            ((ctx.chamada_partes().tipoChamada == 2)
+                                    ? this.visitOutros_ident(ctx.chamada_partes().outros_ident()) +
                                     this.visitDimensao(ctx.chamada_partes().dimensao()) : ""));
         } else if (ctx.tipoParc == 3) {
             return ctx.NUM_INT.getText();
@@ -619,7 +550,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     public String visitOutras_parcelas(LAParser.Outras_parcelasContext ctx) {
         String outras_parcelas = "";
 
-        for (LAParser.ParcelaContext parcela: ctx.parcela()) {
+        for (LAParser.ParcelaContext parcela : ctx.parcela()) {
             outras_parcelas += "% " + this.visitParcela(parcela);
         }
         return outras_parcelas;
@@ -677,7 +608,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParcela_logica(LAParser.Parcela_logicaContext ctx) {
-        return (ctx.tipoParc == 1) ? ("true") : ((ctx.tipoParc == 2) ? ("false") :
+        return (ctx.tipoParc == 1) ? "true" : ((ctx.tipoParc == 2) ? "false" :
                 this.visitExp_relacional(ctx.exp_relacional()));
     }
 
