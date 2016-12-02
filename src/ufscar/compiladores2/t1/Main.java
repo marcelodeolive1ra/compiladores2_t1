@@ -72,7 +72,7 @@ public class Main {
         } else {
             // Parte do código utilizada para testes do gerador de código durante o desenvolvimento
             try {
-                TestaGeradorDeCodigoC.testaGeradorDeCodigoC();
+                GeradorDeCodigoC.testaGeradorDeCodigoC();
             } catch (Exception e) {
                 e.printStackTrace();
             }

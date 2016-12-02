@@ -1,6 +1,10 @@
 package ufscar.compiladores2.t1;
 
+import java.io.FileInputStream;
 import java.util.List;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
@@ -16,6 +20,23 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     // árvore gerada pelo parser
     public GeradorDeCodigoC() {
         this.codigo_c = "";
+    }
+
+    public static void testaGeradorDeCodigoC() throws Exception {
+        String entrada = "/Users/marcelodeoliveiradasilva/Desktop/LACompiler/casosDeTeste/entrada/13.txt";
+//        String entrada = "/Users/ViniciusBarbosa/Downloads/T2/T2/T2/src/trabalho2/casosDeTeste/entrada/casoDeTeste01.txt";
+        //String entrada = "/Users/gustavoB/vai/casosDeTesteT1/entrada/casoDeTeste01.txt";
+        ANTLRInputStream input = new ANTLRInputStream(new FileInputStream(entrada));
+        LALexer lexer = new LALexer(input);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        LAParser parser = new LAParser(tokens);
+        LAParser.ProgramaContext tree = parser.programa();
+
+        GeradorDeCodigoC codigo_c = new GeradorDeCodigoC();
+
+        codigo_c.visitPrograma(tree);
+
+        System.out.println(codigo_c);
     }
 
     // Este método adiciona texto à variável que guarda o código C que é gerado durante a avaliação da AST
