@@ -1,9 +1,5 @@
 package ufscar.compiladores2.t1;
 
-/**
- * Created by marcelodeoliveiradasilva on 19/11/16.
- * Classe aproveitada do Trabalho 2 da disciplina de Compiladores 1
- */
 public class EntradaTabelaDeSimbolos {
 
     private String nome;

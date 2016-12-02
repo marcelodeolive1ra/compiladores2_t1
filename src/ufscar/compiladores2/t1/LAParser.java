@@ -133,7 +133,6 @@ public class LAParser extends Parser {
 	    static String grupo = "<488950, 489085, 489093, 489182>";
 	    PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
 	    Tipos tipos = new Tipos();
-	    Funcoes funcoes = new Funcoes();
 	    private final String GLOBAL = "global";
 	    private final int VARIAVEL = 1;
 	    private final int CONSTANTE = 2;
@@ -1568,7 +1567,7 @@ public class LAParser extends Parser {
 
 				        pilhaDeTabelas.topo().adicionarSimbolo((((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null), "void", "procedimento");
 				        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("procedimento_" + (((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null)));
-				        funcoes.addFuncao((((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null));
+				        pilhaDeTabelas.adicionarFuncaoOuProcedimento((((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null));
 				    
 				setState(283);
 				match(T__21);
@@ -1595,7 +1594,7 @@ public class LAParser extends Parser {
 				setState(292);
 				((Declaracao_globalContext)_localctx).IDENT = match(IDENT);
 
-				        funcoes.addFuncao((((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null));
+				        pilhaDeTabelas.adicionarFuncaoOuProcedimento((((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null));
 				        pilhaDeTabelas.empilhar(new TabelaDeSimbolos("funcao_" + (((Declaracao_globalContext)_localctx).IDENT!=null?((Declaracao_globalContext)_localctx).IDENT.getText():null)));
 				    
 				setState(294);
@@ -1750,7 +1749,7 @@ public class LAParser extends Parser {
 			((ParametroContext)_localctx).tipo_estendido = tipo_estendido();
 
 			        pilhaDeTabelas.topo().adicionarSimbolo(((ParametroContext)_localctx).ident_param.param, ((ParametroContext)_localctx).tipo_estendido.tipodado, "parametro");
-			        funcoes.topo().add(((ParametroContext)_localctx).tipo_estendido.tipodado);
+			        pilhaDeTabelas.topo_funcoes().add(((ParametroContext)_localctx).tipo_estendido.tipodado);
 			    
 			setState(317);
 			mais_parametros();
@@ -3836,25 +3835,8 @@ public class LAParser extends Parser {
 				        }
 
 				        ((Parcela_unarioContext)_localctx).type =  pilhaDeTabelas.getTypeData((((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null));
-				        if (!((Parcela_unarioContext)_localctx).chamada_partes.tipos.isEmpty()) {
-				            List<String> tipos = funcoes.getFuncTipos((((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null));
-				            List<String> params = ((Parcela_unarioContext)_localctx).chamada_partes.tipos;
-				            boolean erro = false;
-
-				            if (tipos != null) {
-				                for(int i = 1; i < tipos.size() && !erro; i++) {
-				                    try {
-				                        if (!tipos.get(i).equals(params.get(i)) && !params.get(i).equals("")) {
-				                            erro = true;
-				                        }
-				                    } catch (IndexOutOfBoundsException e) {
-				                          erro = true;
-				                    }
-				                }
-				            }
-				            if (erro) {
-				                Mensagens.erroIncompatibilidadeParametros((((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null), (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getLine():0));
-				            }
+				        if (((Parcela_unarioContext)_localctx).chamada_partes.tipos.size() > 0) {
+				            pilhaDeTabelas.verificaCompatibilidadeDeParametros(((Parcela_unarioContext)_localctx).chamada_partes.tipos, (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null), (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getLine():0));
 				        }
 				        ((Parcela_unarioContext)_localctx).name =  ((Parcela_unarioContext)_localctx).chamada_partes.name;;
 				        ((Parcela_unarioContext)_localctx).temAtributo =  ((Parcela_unarioContext)_localctx).chamada_partes.temAtributo;

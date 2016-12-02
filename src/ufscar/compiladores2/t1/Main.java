@@ -13,7 +13,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
 
         if (args.length > 0) {
-            // Arquivos que serão utilizados pelo corretor automático
+            // Arquivos de entrada (programa em linguagem LA) e saída (código C ou relatório de erros)
             File arquivo_entrada = new File(args[0]);
             File arquivo_saida = new File(args[1]);
 
@@ -50,11 +50,9 @@ public class Main {
             // Se saida_parser é uma string vazia neste momento, significa que não houveram erros sintáticos
             if(saida_parser.compareTo("") == 0) {
                 // Com isso, verifica-se agora se existem erros semânticos
-                if (Mensagens.getText().compareTo("") != 0) {
+                if (Mensagens.getErrosSemanticos().compareTo("") != 0) {
                     // Erros semânticos :-(
-                    String erros_semanticos = Mensagens.getText();
-                    saida_parser += erros_semanticos;
-                    saida_parser += "Fim da compilacao\n";
+                    saida_parser += Mensagens.getErrosSemanticos() + "Fim da compilacao\n";
                 } else {
                     // Sem erros semânticos :-)
                     // Geração de código C

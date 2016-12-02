@@ -5,7 +5,6 @@ grammar LA;
     static String grupo = "<488950, 489085, 489093, 489182>";
     PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
     Tipos tipos = new Tipos();
-    Funcoes funcoes = new Funcoes();
     private final String GLOBAL = "global";
     private final int VARIAVEL = 1;
     private final int CONSTANTE = 2;
@@ -364,12 +363,12 @@ declaracao_global
     'procedimento' IDENT {
         pilhaDeTabelas.topo().adicionarSimbolo($IDENT.text, "void", "procedimento");
         pilhaDeTabelas.empilhar(new TabelaDeSimbolos("procedimento_" + $IDENT.text));
-        funcoes.addFuncao($IDENT.text);
+        pilhaDeTabelas.adicionarFuncaoOuProcedimento($IDENT.text);
     } '(' parametros_opcional ')' declaracoes_locais comandos 'fim_procedimento' {
         pilhaDeTabelas.desempilhar();
     } |
     'funcao' IDENT {
-        funcoes.addFuncao($IDENT.text);
+        pilhaDeTabelas.adicionarFuncaoOuProcedimento($IDENT.text);
         pilhaDeTabelas.empilhar(new TabelaDeSimbolos("funcao_" + $IDENT.text));
     } '(' parametros_opcional ')' ':' tipo_estendido {
         pilhaDeTabelas.tabelaGlobal().adicionarSimbolo($IDENT.text, $tipo_estendido.tipodado, "funcao");
@@ -389,7 +388,7 @@ parametros_opcional:
 parametro:
     var_opcional ident_param mais_id_param ':' tipo_estendido {
         pilhaDeTabelas.topo().adicionarSimbolo($ident_param.param, $tipo_estendido.tipodado, "parametro");
-        funcoes.topo().add($tipo_estendido.tipodado);
+        pilhaDeTabelas.topo_funcoes().add($tipo_estendido.tipodado);
     }
     mais_parametros;
 
@@ -723,25 +722,8 @@ parcela_unario returns [String type, int indice, String name, int tipoParc, bool
         }
 
         $type = pilhaDeTabelas.getTypeData($IDENT.text);
-        if (!$chamada_partes.tipos.isEmpty()) {
-            List<String> tipos = funcoes.getFuncTipos($IDENT.text);
-            List<String> params = $chamada_partes.tipos;
-            boolean erro = false;
-
-            if (tipos != null) {
-                for(int i = 1; i < tipos.size() && !erro; i++) {
-                    try {
-                        if (!tipos.get(i).equals(params.get(i)) && !params.get(i).equals("")) {
-                            erro = true;
-                        }
-                    } catch (IndexOutOfBoundsException e) {
-                          erro = true;
-                    }
-                }
-            }
-            if (erro) {
-                Mensagens.erroIncompatibilidadeParametros($IDENT.text, $IDENT.line);
-            }
+        if ($chamada_partes.tipos.size() > 0) {
+            pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
         }
         $name = $chamada_partes.name;;
         $temAtributo = $chamada_partes.temAtributo;

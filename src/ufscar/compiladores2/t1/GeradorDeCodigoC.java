@@ -3,10 +3,6 @@ package ufscar.compiladores2.t1;
 import java.util.List;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-/**
- * Created by marcelodeoliveiradasilva on 19/11/16.
- */
-
 public class GeradorDeCodigoC extends LABaseVisitor<String> {
     // Variável que armazenará o código C gerado
     private String codigo_c;
