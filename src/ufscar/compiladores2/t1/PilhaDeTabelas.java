@@ -109,6 +109,26 @@ public class PilhaDeTabelas {
         }
     }
 
+    public void verificaVariavelNaoExistente(String variavel, String nome_atributo, String id_atributo, int linha) {
+        if (!this.existeSimbolo(variavel)) {
+            ErrosSemanticos.erroVariavelNaoExiste(variavel, linha);
+        } else if (id_atributo.compareTo("") != 0) {
+            if (!this.existeAtributo(this.getTipoDaVariavel(variavel), nome_atributo)) {
+                ErrosSemanticos.erroVariavelNaoExiste(variavel + id_atributo, linha);
+            }
+        }
+    }
+
+    public void verificaVariavelJaExistente(List<Pair> variaveis, String tipo_variavel) {
+        for (Pair variavel: variaveis) {
+            if (this.existeSimbolo(variavel.a.toString())) {
+                ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
+            } else {
+                this.topo().adicionarSimbolo(variavel.a.toString(), tipo_variavel, "variavel");
+            }
+        }
+    }
+
     public void adicionarTipo(String tipo, List<Pair> atributos) {
         tipos.put(tipo, atributos);
     }

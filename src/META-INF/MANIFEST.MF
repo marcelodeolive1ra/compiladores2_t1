@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: /usr/local/lib/antlr-4.5.3-complete.jar
+Main-Class: ufscar.compiladores2.t1.Main
+

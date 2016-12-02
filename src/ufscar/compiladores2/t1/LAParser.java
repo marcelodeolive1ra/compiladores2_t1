@@ -453,24 +453,13 @@ public class LAParser extends Parser {
 			setState(168);
 			((VariavelContext)_localctx).tipo = tipo();
 
-			        List<Pair> mais_variaveis = ((VariavelContext)_localctx).mais_var.nomes;
-			        Pair primeira_variavel = new Pair((((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null), (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getLine():0));
-
-			        if (pilhaDeTabelas.existeSimbolo(primeira_variavel.a.toString())) {
-			            ErrosSemanticos.erroVariavelJaExiste(primeira_variavel.a.toString(), Integer.parseInt(primeira_variavel.b.toString()));
-			        } else {
-			            pilhaDeTabelas.topo().adicionarSimbolo(primeira_variavel.a.toString(), ((VariavelContext)_localctx).tipo.tipodado, "variavel");
-			        }
-
-			        for (Pair variavel: mais_variaveis) {
-			            if (pilhaDeTabelas.existeSimbolo(variavel.a.toString())) {
-			                ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
-			            } else {
-			                pilhaDeTabelas.topo().adicionarSimbolo(variavel.a.toString(), ((VariavelContext)_localctx).tipo.tipodado, "variavel");
-			            }
-			        }
 			        ((VariavelContext)_localctx).name =  (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null);
 			        ((VariavelContext)_localctx).tipo_variavel =  ((VariavelContext)_localctx).tipo.tipodado;
+
+			        List<Pair> mais_variaveis = ((VariavelContext)_localctx).mais_var.nomes;
+			        Pair primeira_variavel = new Pair((((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null), (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getLine():0));
+			        mais_variaveis.add(0, primeira_variavel);
+			        pilhaDeTabelas.verificaVariavelJaExistente(mais_variaveis, _localctx.tipo_variavel);
 			    
 			}
 		}
@@ -595,14 +584,7 @@ public class LAParser extends Parser {
 			((IdentificadorContext)_localctx).outros_ident = outros_ident();
 
 			        ((IdentificadorContext)_localctx).nome_variavel =  (((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null);
-
-			        if (!pilhaDeTabelas.existeSimbolo((((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null))) {
-			            ErrosSemanticos.erroVariavelNaoExiste((((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null), (((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getLine():0));
-			        } else if (((IdentificadorContext)_localctx).outros_ident.id.compareTo("") != 0) {
-			            if (!pilhaDeTabelas.existeAtributo(pilhaDeTabelas.getTipoDaVariavel((((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null)), ((IdentificadorContext)_localctx).outros_ident.nome_atributo)) {
-			                ErrosSemanticos.erroVariavelNaoExiste((((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null) + ((IdentificadorContext)_localctx).outros_ident.id, (((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getLine():0));
-			            }
-			        }
+			        pilhaDeTabelas.verificaVariavelNaoExistente((((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getText():null), ((IdentificadorContext)_localctx).outros_ident.nome_atributo, ((IdentificadorContext)_localctx).outros_ident.id, (((IdentificadorContext)_localctx).IDENT!=null?((IdentificadorContext)_localctx).IDENT.getLine():0));
 			    
 			}
 		}

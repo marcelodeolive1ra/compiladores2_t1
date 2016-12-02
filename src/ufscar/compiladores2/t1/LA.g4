@@ -48,7 +48,7 @@ COMENTARIO:
 
 // Regra para ignorar espaços, tabulações e quebras de linha
 ESPACO:
-    ( ' ' |'\t' | '\r' | '\n') {
+    (' ' |'\t' | '\r' | '\n') {
         skip();
     }
 ;
@@ -144,24 +144,13 @@ declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel
 variavel returns [String name, String tipo_variavel]
     :
     IDENT dimensao mais_var ':' tipo {
-        List<Pair> mais_variaveis = $mais_var.nomes;
-        Pair primeira_variavel = new Pair($IDENT.text, $IDENT.line);
-
-        if (pilhaDeTabelas.existeSimbolo(primeira_variavel.a.toString())) {
-            ErrosSemanticos.erroVariavelJaExiste(primeira_variavel.a.toString(), Integer.parseInt(primeira_variavel.b.toString()));
-        } else {
-            pilhaDeTabelas.topo().adicionarSimbolo(primeira_variavel.a.toString(), $tipo.tipodado, "variavel");
-        }
-
-        for (Pair variavel: mais_variaveis) {
-            if (pilhaDeTabelas.existeSimbolo(variavel.a.toString())) {
-                ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
-            } else {
-                pilhaDeTabelas.topo().adicionarSimbolo(variavel.a.toString(), $tipo.tipodado, "variavel");
-            }
-        }
         $name = $IDENT.text;
         $tipo_variavel = $tipo.tipodado;
+
+        List<Pair> mais_variaveis = $mais_var.nomes;
+        Pair primeira_variavel = new Pair($IDENT.text, $IDENT.line);
+        mais_variaveis.add(0, primeira_variavel);
+        pilhaDeTabelas.verificaVariavelJaExistente(mais_variaveis, $tipo_variavel);
     }
 ;
 
@@ -195,14 +184,7 @@ identificador returns [String nome_variavel]
     :
     ponteiros_opcionais IDENT dimensao outros_ident {
         $nome_variavel = $IDENT.text;
-
-        if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
-        } else if ($outros_ident.id.compareTo("") != 0) {
-            if (!pilhaDeTabelas.existeAtributo(pilhaDeTabelas.getTipoDaVariavel($IDENT.text), $outros_ident.nome_atributo)) {
-                ErrosSemanticos.erroVariavelNaoExiste($IDENT.text + $outros_ident.id, $IDENT.line);
-            }
-        }
+        pilhaDeTabelas.verificaVariavelNaoExistente($IDENT.text, $outros_ident.nome_atributo, $outros_ident.id, $IDENT.line);
     }
 ;
 
