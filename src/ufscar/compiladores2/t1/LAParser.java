@@ -3842,8 +3842,6 @@ public class LAParser extends Parser {
 				            boolean erro = false;
 
 				            if (tipos != null) {
-
-
 				                for(int i = 1; i < tipos.size() && !erro; i++) {
 				                    try {
 				                        if (!tipos.get(i).equals(params.get(i)) && !params.get(i).equals("")) {

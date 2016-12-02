@@ -29,8 +29,7 @@ public class Main {
             // Registro do nosso Error Listener para customização das mensagens de erros sintáticos
             parser.removeErrorListeners();
 
-            OutputBuffer erros_sintaticos = new OutputBuffer();
-            LACustomErrorListener error_listener = new LACustomErrorListener(erros_sintaticos);
+            LACustomErrorListener error_listener = new LACustomErrorListener();
 
             parser.addErrorListener(error_listener);
 
@@ -46,7 +45,7 @@ public class Main {
                 }
             }
 
-            saida_parser += erros_sintaticos.toString();
+            saida_parser += error_listener.getErrosSintaticos();
 
             // Se saida_parser é uma string vazia neste momento, significa que não houveram erros sintáticos
             if(saida_parser.compareTo("") == 0) {

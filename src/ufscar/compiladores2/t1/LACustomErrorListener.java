@@ -21,26 +21,25 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
  */
 public class LACustomErrorListener implements ANTLRErrorListener {
 
-    OutputBuffer erros_sintaticos;
+    private String erros_sintaticos;
 
-    public LACustomErrorListener(OutputBuffer erros_sintaticos) {
-        this.erros_sintaticos = erros_sintaticos;
+    public LACustomErrorListener() {
+        this.erros_sintaticos = "";
     }
 
-    @Override
-    public String toString() {
-        return this.erros_sintaticos.toString();
+    public String getErrosSintaticos() {
+        return this.erros_sintaticos;
     }
 
     //Trata o caso de <EOF> e adiciona uma exceção no programa para parar a execução após a impressão do erro
     @Override
     public void syntaxError(Recognizer<?, ?> rcgnzr, Object o, int i, int i1, String string, RecognitionException re) {
-        Token tk = (Token)o;
-        String text = tk.getText();
-        if (text.contentEquals("<EOF>")) {
-            text = "EOF";
+        Token token = (Token)o;
+        String texto_do_token = token.getText();
+        if (texto_do_token.contentEquals("<EOF>")) {
+            texto_do_token = "EOF";
         }
-        this.erros_sintaticos.println("Linha " + i +": erro sintatico proximo a " + text);
+        this.erros_sintaticos += "Linha " + i +": erro sintatico proximo a " + texto_do_token + "\n";
 
         throw new ParseCancellationException();
     }
