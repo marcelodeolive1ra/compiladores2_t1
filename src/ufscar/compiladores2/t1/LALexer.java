@@ -99,7 +99,6 @@ public class LALexer extends Lexer {
 
 	    static String grupo = "<488950, 489085, 489093, 489182>";
 	    PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
-	    Tipos tipos = new Tipos();
 	    private final String GLOBAL = "global";
 	    private final int VARIAVEL = 1;
 	    private final int CONSTANTE = 2;

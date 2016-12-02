@@ -4,7 +4,6 @@ grammar LA;
 @members {
     static String grupo = "<488950, 489085, 489093, 489182>";
     PilhaDeTabelas pilhaDeTabelas = new PilhaDeTabelas();
-    Tipos tipos = new Tipos();
     private final String GLOBAL = "global";
     private final int VARIAVEL = 1;
     private final int CONSTANTE = 2;
@@ -127,7 +126,7 @@ declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel
     } |
     'tipo' IDENT ':' tipo {
         $tipo_declaracao = TIPO;
-        tipos.addTipo($IDENT.text, $tipo.atributos);
+        pilhaDeTabelas.adicionarTipo($IDENT.text, $tipo.atributos);
         pilhaDeTabelas.topo().adicionarSimbolo($IDENT.text, "novotipo", "tipo");
     }
 ;
@@ -140,7 +139,7 @@ declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel
 // a linha em que a variável é declarada.
 // A lista de Pairs receberá o retorno da regra "mais_var", e adicionará cada uma das variáveis da lista na tabela de
 // símbolos desde que estas ainda não tenham sido declaradas anteriormente no mesmo escopo. Caso as variáveis já existam
-// um erro semântico será registrado através de um atributo estático da classe Mensagens.
+// um erro semântico será registrado através de um atributo estático da classe ErrosSemanticos.
 // Mais detalhes sobre a classe Pair em http://www.antlr.org/api/Java/org/antlr/v4/runtime/misc/Pair.html
 variavel returns [String name, String tipo_variavel]
     :
@@ -149,14 +148,14 @@ variavel returns [String name, String tipo_variavel]
         Pair primeira_variavel = new Pair($IDENT.text, $IDENT.line);
 
         if (pilhaDeTabelas.existeSimbolo(primeira_variavel.a.toString())) {
-            Mensagens.erroVariavelJaExiste(primeira_variavel.a.toString(), Integer.parseInt(primeira_variavel.b.toString()));
+            ErrosSemanticos.erroVariavelJaExiste(primeira_variavel.a.toString(), Integer.parseInt(primeira_variavel.b.toString()));
         } else {
             pilhaDeTabelas.topo().adicionarSimbolo(primeira_variavel.a.toString(), $tipo.tipodado, "variavel");
         }
 
         for (Pair variavel: mais_variaveis) {
             if (pilhaDeTabelas.existeSimbolo(variavel.a.toString())) {
-                Mensagens.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
+                ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
             } else {
                 pilhaDeTabelas.topo().adicionarSimbolo(variavel.a.toString(), $tipo.tipodado, "variavel");
             }
@@ -198,10 +197,10 @@ identificador returns [String nome_variavel]
         $nome_variavel = $IDENT.text;
 
         if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            Mensagens.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
+            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
         } else if ($outros_ident.id.compareTo("") != 0) {
-            if (!tipos.existeAtributo(pilhaDeTabelas.getVarTipo($IDENT.text), $outros_ident.nome_atributo)) {
-                Mensagens.erroVariavelNaoExiste($IDENT.text + $outros_ident.id, $IDENT.line);
+            if (!pilhaDeTabelas.existeAtributo(pilhaDeTabelas.getTipoDaVariavel($IDENT.text), $outros_ident.nome_atributo)) {
+                ErrosSemanticos.erroVariavelNaoExiste($IDENT.text + $outros_ident.id, $IDENT.line);
             }
         }
     }
@@ -250,7 +249,7 @@ tipo returns [String tipodado, List<Pair> atributos]
     registro {
         $tipodado = "registro";
         $atributos = $registro.atributos;
-        tipos.addTipo("registro", $atributos);
+        pilhaDeTabelas.adicionarTipo("registro", $atributos);
     } |
     tipo_estendido {
         $tipodado = $tipo_estendido.tipodado;
@@ -288,8 +287,8 @@ tipo_basico_ident returns [String tipodado]
     } |
     IDENT {
         $tipodado = $IDENT.text;
-        if (!tipos.existeTipo($IDENT.text)) {
-            Mensagens.erroTipoNaoExiste($IDENT.text, $IDENT.line);
+        if (!pilhaDeTabelas.existeTipo($IDENT.text)) {
+            ErrosSemanticos.erroTipoNaoExiste($IDENT.text, $IDENT.line);
         }
     }
 ;
@@ -439,7 +438,7 @@ cmd returns [ int tipoCmd, String nome_variavel,  String tipo_variavel]
     : 'leia' '(' identificador mais_ident ')' {
         $tipoCmd = LEIA;
         $nome_variavel = $identificador.nome_variavel;
-        $tipo_variavel = pilhaDeTabelas.getTypeData($identificador.nome_variavel);
+        $tipo_variavel = pilhaDeTabelas.getTipoDoSimbolo($identificador.nome_variavel);
     } |
     'escreva' '(' expressao mais_expressao ')' {
         $tipoCmd = ESCREVA;
@@ -472,34 +471,34 @@ cmd returns [ int tipoCmd, String nome_variavel,  String tipo_variavel]
         $tipoCmd = ATRIBUICAO;
 
         if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            Mensagens.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
-        } else if (!$atribuicao.compativel && !$atribuicao.type.equals("") && !pilhaDeTabelas.getTypeData($IDENT.text).equals($atribuicao.type)) {
-            if (!(pilhaDeTabelas.getTypeData($IDENT.text).equals("real") && $atribuicao.type.equals("inteiro"))) {
+            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
+        } else if (!$atribuicao.compativel && !$atribuicao.type.equals("") && !pilhaDeTabelas.getTipoDoSimbolo($IDENT.text).equals($atribuicao.type)) {
+            if (!(pilhaDeTabelas.getTipoDoSimbolo($IDENT.text).equals("real") && $atribuicao.type.equals("inteiro"))) {
                 if ($atribuicao.indice != -1) {
-                      Mensagens.erroVariavelNaoCompativel($IDENT.text + "[" + $atribuicao.indice + "]", $IDENT.line);
+                      ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text + "[" + $atribuicao.indice + "]", $IDENT.line);
                 } else if (!$atribuicao.name.equals("")) {
-                     if (!tipos.getTipoAtr($atribuicao.name).equals($atribuicao.type)) {
-                        if (!(tipos.getTipoAtr($atribuicao.name).equals("real") && $atribuicao.type.equals("inteiro"))) {
-                            if (!tipos.getTipoAtr($atribuicao.name).equals(pilhaDeTabelas.getTypeData($IDENT.text))) {
-                                Mensagens.erroVariavelNaoCompativel($IDENT.text + "." + $atribuicao.name, $IDENT.line);
+                     if (!pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals($atribuicao.type)) {
+                        if (!(pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals("real") && $atribuicao.type.equals("inteiro"))) {
+                            if (!pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals(pilhaDeTabelas.getTipoDoSimbolo($IDENT.text))) {
+                                ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text + "." + $atribuicao.name, $IDENT.line);
                             }
                         }
                      }
                 } else {
-                      Mensagens.erroVariavelNaoCompativel($IDENT.text, $IDENT.line);
+                      ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text, $IDENT.line);
                 }
             }
         }
 
         if ($IDENT.text.equals("ponteiro") && $atribuicao.type.equals("")) {
-             Mensagens.erroVariavelNaoCompativel("^" + $IDENT.text, 14);
+             ErrosSemanticos.erroVariavelNaoCompativel("^" + $IDENT.text, 14);
         }
     } |
     retorne = 'retorne' expressao {
         $tipoCmd = RETORNE;
 
         if (!pilhaDeTabelas.topo().getType().equals("funcao")) {
-            Mensagens.escopoNaoPermitido($retorne.line);
+            ErrosSemanticos.escopoNaoPermitido($retorne.line);
         }
     }
 ;
@@ -534,28 +533,20 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
     @init {
         $type = "";
         $name = "";
+        $compativel = false;
     }
     :
     outros_ident dimensao '<-' expressao {
         $type = $expressao.type;
+        $indice = $dimensao.indice;
 
-        if ($outros_ident.nome_atributo.equals("")) {
-            if (!$expressao.name.equals("")) {
-                 $compativel = false;
-
-                 if($expressao.temAtributo) {
-                    $name = $expressao.name;
-                 }
-            } else {
-                $compativel = $expressao.compativel;
-                $type = $expressao.type;
-            }
+        if ($outros_ident.nome_atributo.compareTo("") == 0) {
+            $name = ($expressao.temAtributo && $expressao.name.compareTo("") != 0) ? $expressao.name : $name;
+            $compativel = ($expressao.name.compareTo("") == 0) ? $expressao.compativel : false;
+            $type = ($expressao.name.compareTo("") == 0) ? $expressao.type : $type;
         } else {
-            $compativel = false;
-            $type = $expressao.type;
             $name = $outros_ident.nome_atributo;
         }
-        $indice = $dimensao.indice;
     }
 ;
 
@@ -597,7 +588,7 @@ exp_aritmetica returns [boolean compativel, String type, int indice, String name
         $compativel = false;
         $type = "";
         $name = "";
-        $temAtributo=false;
+        $temAtributo = false;
     }
     :
     termo outros_termos {
@@ -605,13 +596,11 @@ exp_aritmetica returns [boolean compativel, String type, int indice, String name
         $temAtributo = $termo.temAtributo;
 
         if (!$outros_termos.type.equals("") && !$termo.type.equals($outros_termos.type)) {
-            $compativel = false;
             $type = $outros_termos.type;
             $indice = $termo.indice;
         } else {
-            $compativel = false;
             $type = $termo.type;
-        };
+        }
     }
 ;
 
@@ -704,7 +693,7 @@ parcela returns [String type, int indice, String name, int tipo_parcela, boolean
 //uma expressão entre parenteses
 //com o retorno recebido de chamada_partes faz as devidas verificações e em caso
 //de algum problema retorna o erro adequado.
-parcela_unario returns [String type, int indice, String name, int tipoParc, boolean temAtributo]
+parcela_unario returns [String type, int indice, String name, String tipo_parcela_unario, boolean temAtributo]
     @init {
         $type = "";
         $indice = -1;
@@ -713,35 +702,36 @@ parcela_unario returns [String type, int indice, String name, int tipoParc, bool
     }
     :
     '^' IDENT outros_ident dimensao {
-        $type = pilhaDeTabelas.getTypeData($IDENT.text);
-        $tipoParc = 1;
+        $tipo_parcela_unario = "PONTEIRO";
+        $type = pilhaDeTabelas.getTipoDoSimbolo($IDENT.text);
     } |
     IDENT chamada_partes {
+        $tipo_parcela_unario = "CHAMADA";
+
         if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            Mensagens.erroVariavelNaoExiste($IDENT.text+$chamada_partes.id, $IDENT.line);
+            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text+$chamada_partes.id, $IDENT.line);
         }
 
-        $type = pilhaDeTabelas.getTypeData($IDENT.text);
+        $type = pilhaDeTabelas.getTipoDoSimbolo($IDENT.text);
         if ($chamada_partes.tipos.size() > 0) {
             pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
         }
         $name = $chamada_partes.name;;
         $temAtributo = $chamada_partes.temAtributo;
-        $tipoParc = 2;
     } |
     NUM_INT {
+        $tipo_parcela_unario = "INTEIRO";
         $type = "inteiro";
         $indice = Integer.parseInt($NUM_INT.text);
         $name = $NUM_INT.text;
-        $tipoParc = 3;
     } |
     NUM_REAL {
+        $tipo_parcela_unario = "REAL";
         $type = "real";
         $name = $NUM_REAL.text;
-        $tipoParc = 4;
     } |
     '(' expressao ')' {
-        $tipoParc = 5;
+        $tipo_parcela_unario = "EXPRESSAO";
     }
 ;
 
@@ -881,7 +871,7 @@ fator_logico returns [boolean compativel, String type, String name, boolean temA
     :
     op_nao parcela_logica {
         $compativel = $parcela_logica.compativel;
-        $type = $parcela_logica.type;
+        $type = $parcela_logica.tipo_parcela_logica;
         $name = $parcela_logica.name;
         $temAtributo = $parcela_logica.temAtributo;
     }
@@ -889,27 +879,23 @@ fator_logico returns [boolean compativel, String type, String name, boolean temA
 
 
 //Parcela_logica que é verdadeira, falsa ou uma expressão relacional
-parcela_logica returns [boolean compativel, String type, String name, int tipoParc, boolean temAtributo]
+parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean temAtributo]
     @init {
         $name = "";
         $temAtributo = false;
+        $compativel = false;
     }
     :
     'verdadeiro' {
-        $compativel = false;
-        $type = "logico";
-        $tipoParc = 1;
+        $tipo_parcela_logica = "verdadeiro";
     } |
     'falso' {
-        $compativel = false;
-        $type = "logico";
-        $tipoParc = 2;
+        $tipo_parcela_logica = "falso";
     } |
     exp_relacional {
+        $tipo_parcela_logica = $exp_relacional.type;
         $compativel = $exp_relacional.compativel;
-        $type = $exp_relacional.type;
         $name = $exp_relacional.name;
-        $tipoParc = 3;
-        $temAtributo=$exp_relacional.temAtributo;
+        $temAtributo = $exp_relacional.temAtributo;
     }
 ;

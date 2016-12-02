@@ -1,19 +1,26 @@
 package ufscar.compiladores2.t1;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import org.antlr.v4.runtime.misc.Pair;
+
+import java.util.*;
 
 public class PilhaDeTabelas {
 
     private LinkedList<TabelaDeSimbolos> pilha;
     private LinkedList<List<String>> funcoes_ou_procedimentos;
     private LinkedList<String> nomes_das_funcoes;
+    private Map<String, List<Pair>> tipos;
 
     public PilhaDeTabelas() {
         this.pilha = new LinkedList<>();
         this.funcoes_ou_procedimentos = new LinkedList<>();
         this.nomes_das_funcoes = new LinkedList<>();
+        tipos = new HashMap<>();
+        List<Pair> tipo_basico = new ArrayList<>();
+        tipos.put("inteiro", tipo_basico);
+        tipos.put("real", tipo_basico);
+        tipos.put("literal", tipo_basico);
+        tipos.put("logico", tipo_basico);
     }
 
     public void empilhar(TabelaDeSimbolos tabela_de_simbolos) {
@@ -42,7 +49,7 @@ public class PilhaDeTabelas {
         return false;
     }
 
-    public String getTypeData(String nome) {
+    public String getTipoDoSimbolo(String nome) {
         for (TabelaDeSimbolos tabela : this.pilha) {
             if (tabela.existeSimbolo(nome)) {
                 return tabela.getTypeData(nome);
@@ -50,7 +57,8 @@ public class PilhaDeTabelas {
         }
         return "";
     }
-    public String getVarTipo(String nome) {
+
+    public String getTipoDaVariavel(String nome) {
         for (TabelaDeSimbolos ts : this.pilha) {
             if (ts.existeSimbolo(nome)) {
                 return ts.getVarTipo(nome);
@@ -58,6 +66,7 @@ public class PilhaDeTabelas {
         }
         return "false";
     }
+
     public void desempilhar() {
         this.pilha.pop();
     }
@@ -89,14 +98,53 @@ public class PilhaDeTabelas {
             for (int i = 0; i < tipos_dos_parametros.size() && compativel; i++) {
                 try {
                     compativel = !(tipos_dos_parametros.get(i).compareTo(parametros.get(i)) != 0 &&
-                                parametros.get(i).compareTo("") != 0);
+                            parametros.get(i).compareTo("") != 0);
                 } catch (IndexOutOfBoundsException e) {
                     compativel = false;
                 }
             }
         }
         if (!compativel) {
-            Mensagens.erroIncompatibilidadeParametros(nome_funcao, linha);
+            ErrosSemanticos.erroIncompatibilidadeParametros(nome_funcao, linha);
         }
+    }
+
+    public void adicionarTipo(String tipo, List<Pair> atributos) {
+        tipos.put(tipo, atributos);
+    }
+
+    public boolean existeAtributo(String tipo, String atributo) {
+        for (Map.Entry<String, List<Pair>> entry : tipos.entrySet()) {
+            String key = entry.getKey();
+            if (key.equals(tipo)) {
+                List<Pair> value = entry.getValue();
+                for (Pair pair : value) {
+                    if (pair.a.toString().equals(atributo))
+                        return true;
+                }
+                break;
+            }
+        }
+        return false;
+    }
+
+    public String getTipoDoAtributo(String atributo) {
+        for (Map.Entry<String, List<Pair>> entry : tipos.entrySet()) {
+            String key = entry.getKey();
+            List<Pair> value = entry.getValue();
+            for (Pair pair : value) {
+                if (pair.a.toString().equals(atributo))
+                    return pair.b.toString();
+            }
+        }
+        return "";
+    }
+
+    public boolean existeTipo(String tipo) {
+        for (String t : tipos.keySet()) {
+            if (t.equals(tipo))
+                return true;
+        }
+        return false;
     }
 }

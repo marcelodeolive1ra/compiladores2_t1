@@ -2,7 +2,7 @@ package ufscar.compiladores2.t1;
 
 // Classe que adiciona ao arquivo de saída mensagens de erros semânticos
 
-public class Mensagens {
+public class ErrosSemanticos {
     private static String erros_semanticos = "";
 
     public static void erroVariavelJaExiste(String variavel, int linha) {

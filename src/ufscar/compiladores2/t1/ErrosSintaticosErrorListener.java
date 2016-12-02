@@ -15,15 +15,12 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-/**
- *
- * @author marcelodeoliveiradasilva
- */
-public class LACustomErrorListener implements ANTLRErrorListener {
+
+public class ErrosSintaticosErrorListener implements ANTLRErrorListener {
 
     private String erros_sintaticos;
 
-    public LACustomErrorListener() {
+    public ErrosSintaticosErrorListener() {
         this.erros_sintaticos = "";
     }
 

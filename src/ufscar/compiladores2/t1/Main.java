@@ -29,7 +29,7 @@ public class Main {
             // Registro do nosso Error Listener para customização das mensagens de erros sintáticos
             parser.removeErrorListeners();
 
-            LACustomErrorListener error_listener = new LACustomErrorListener();
+            ErrosSintaticosErrorListener error_listener = new ErrosSintaticosErrorListener();
 
             parser.addErrorListener(error_listener);
 
@@ -50,9 +50,9 @@ public class Main {
             // Se saida_parser é uma string vazia neste momento, significa que não houveram erros sintáticos
             if(saida_parser.compareTo("") == 0) {
                 // Com isso, verifica-se agora se existem erros semânticos
-                if (Mensagens.getErrosSemanticos().compareTo("") != 0) {
+                if (ErrosSemanticos.getErrosSemanticos().compareTo("") != 0) {
                     // Erros semânticos :-(
-                    saida_parser += Mensagens.getErrosSemanticos() + "Fim da compilacao\n";
+                    saida_parser += ErrosSemanticos.getErrosSemanticos() + "Fim da compilacao\n";
                 } else {
                     // Sem erros semânticos :-)
                     // Geração de código C

@@ -537,9 +537,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParcela_unario(LAParser.Parcela_unarioContext ctx) {
-        if (ctx.tipoParc == 1) {
+        if (ctx.tipo_parcela_unario.compareTo("PONTEIRO") == 0) {
             return "* " + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
-        } else if (ctx.tipoParc == 2) {
+        } else if (ctx.tipo_parcela_unario.compareTo("CHAMADA") == 0) {
             return ctx.IDENT().getText() +
                     ((ctx.chamada_partes().tipoChamada == 1) ?
                             "(" + this.visitExpressao(ctx.chamada_partes().expressao()) +
@@ -547,11 +547,11 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                             ((ctx.chamada_partes().tipoChamada == 2)
                                     ? this.visitOutros_ident(ctx.chamada_partes().outros_ident()) +
                                     this.visitDimensao(ctx.chamada_partes().dimensao()) : ""));
-        } else if (ctx.tipoParc == 3) {
+        } else if (ctx.tipo_parcela_unario.compareTo("INTEIRO") == 0) {
             return ctx.NUM_INT.getText();
-        } else if (ctx.tipoParc == 4) {
+        } else if (ctx.tipo_parcela_unario.compareTo("REAL") == 0) {
             return ctx.NUM_REAL.getText();
-        } else if (ctx.tipoParc == 5) {
+        } else if (ctx.tipo_parcela_unario.compareTo("EXPRESSAO") == 0) {
             return "(" + this.visitExpressao(ctx.expressao()) + ")";
         }
         return "";
@@ -625,8 +625,9 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
 
     @Override
     public String visitParcela_logica(LAParser.Parcela_logicaContext ctx) {
-        return (ctx.tipoParc == 1) ? "true" : ((ctx.tipoParc == 2) ? "false" :
-                this.visitExp_relacional(ctx.exp_relacional()));
+        return (ctx.tipo_parcela_logica.compareTo("verdadeiro") == 0) ?
+                "true" : ((ctx.tipo_parcela_logica.compareTo("falso") == 0) ?
+                "false" : this.visitExp_relacional(ctx.exp_relacional()));
     }
 
     @Override
