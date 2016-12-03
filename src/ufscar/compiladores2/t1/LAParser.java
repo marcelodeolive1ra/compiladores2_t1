@@ -66,8 +66,8 @@ public class LAParser extends Parser {
 
 	private static final String[] _LITERAL_NAMES = {
 		null, "'algoritmo'", "'fim_algoritmo'", "'declare'", "'constante'", "':'", 
-		"'='", "'tipo'", "','", "'^'", "'.'", "'['", "']'", "'literal'", "'inteiro'", 
-		"'real'", "'logico'", "'verdadeiro'", "'falso'", "'registro'", "'fim_registro'", 
+		"'='", "'tipo'", "','", "'^'", "'.'", "'['", "']'", "'inteiro'", "'real'", 
+		"'literal'", "'logico'", "'verdadeiro'", "'falso'", "'registro'", "'fim_registro'", 
 		"'procedimento'", "'('", "')'", "'fim_procedimento'", "'funcao'", "'fim_funcao'", 
 		"'var'", "'leia'", "'escreva'", "'se'", "'entao'", "'fim_se'", "'caso'", 
 		"'seja'", "'fim_caso'", "'para'", "'<-'", "'ate'", "'faca'", "'fim_para'", 
@@ -455,11 +455,7 @@ public class LAParser extends Parser {
 
 			        ((VariavelContext)_localctx).name =  (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null);
 			        ((VariavelContext)_localctx).tipo_variavel =  ((VariavelContext)_localctx).tipo.tipodado;
-
-			        List<Pair> mais_variaveis = ((VariavelContext)_localctx).mais_var.nomes;
-			        Pair primeira_variavel = new Pair((((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null), (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getLine():0));
-			        mais_variaveis.add(0, primeira_variavel);
-			        pilhaDeTabelas.verificaVariavelJaExistente(mais_variaveis, _localctx.tipo_variavel);
+			        pilhaDeTabelas.verificaVariavelJaExistente(new Pair((((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getText():null), (((VariavelContext)_localctx).IDENT!=null?((VariavelContext)_localctx).IDENT.getLine():0)), ((VariavelContext)_localctx).mais_var.nomes, _localctx.tipo_variavel);
 			    
 			}
 		}
@@ -654,7 +650,7 @@ public class LAParser extends Parser {
 	public static class Outros_identContext extends ParserRuleContext {
 		public String id;
 		public String nome_atributo;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Token IDENT;
 		public List<Ponteiros_opcionaisContext> ponteiros_opcionais() {
 			return getRuleContexts(Ponteiros_opcionaisContext.class);
@@ -711,7 +707,7 @@ public class LAParser extends Parser {
 
 				            _localctx.id += "." + (((Outros_identContext)_localctx).IDENT!=null?((Outros_identContext)_localctx).IDENT.getText():null);
 				            ((Outros_identContext)_localctx).nome_atributo =  (((Outros_identContext)_localctx).IDENT!=null?((Outros_identContext)_localctx).IDENT.getText():null);
-				            ((Outros_identContext)_localctx).temAtributo =  true;
+				            ((Outros_identContext)_localctx).atributo =  true;
 				        
 				}
 				}
@@ -945,7 +941,7 @@ public class LAParser extends Parser {
 				setState(230);
 				match(T__12);
 
-				        ((Tipo_basicoContext)_localctx).tipodado =  "literal";
+				        ((Tipo_basicoContext)_localctx).tipodado =  "inteiro";
 				    
 				}
 				break;
@@ -955,7 +951,7 @@ public class LAParser extends Parser {
 				setState(232);
 				match(T__13);
 
-				        ((Tipo_basicoContext)_localctx).tipodado =  "inteiro";
+				        ((Tipo_basicoContext)_localctx).tipodado =  "real";
 				    
 				}
 				break;
@@ -965,7 +961,7 @@ public class LAParser extends Parser {
 				setState(234);
 				match(T__14);
 
-				        ((Tipo_basicoContext)_localctx).tipodado =  "real";
+				        ((Tipo_basicoContext)_localctx).tipodado =  "literal";
 				    
 				}
 				break;
@@ -2407,7 +2403,7 @@ public class LAParser extends Parser {
 			        ((AtribuicaoContext)_localctx).indice =  ((AtribuicaoContext)_localctx).dimensao.indice;
 
 			        if (((AtribuicaoContext)_localctx).outros_ident.nome_atributo.compareTo("") == 0) {
-			            ((AtribuicaoContext)_localctx).name =  (((AtribuicaoContext)_localctx).expressao.temAtributo && ((AtribuicaoContext)_localctx).expressao.name.compareTo("") != 0) ? ((AtribuicaoContext)_localctx).expressao.name : _localctx.name;
+			            ((AtribuicaoContext)_localctx).name =  (((AtribuicaoContext)_localctx).expressao.atributo && ((AtribuicaoContext)_localctx).expressao.name.compareTo("") != 0) ? ((AtribuicaoContext)_localctx).expressao.name : _localctx.name;
 			            ((AtribuicaoContext)_localctx).compativel =  (((AtribuicaoContext)_localctx).expressao.name.compareTo("") == 0) ? ((AtribuicaoContext)_localctx).expressao.compativel : false;
 			            ((AtribuicaoContext)_localctx).type =  (((AtribuicaoContext)_localctx).expressao.name.compareTo("") == 0) ? ((AtribuicaoContext)_localctx).expressao.type : _localctx.type;
 			        } else {
@@ -2831,7 +2827,7 @@ public class LAParser extends Parser {
 		public String type;
 		public int indice;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public TermoContext termo;
 		public Outros_termosContext outros_termos;
 		public TermoContext termo() {
@@ -2867,7 +2863,7 @@ public class LAParser extends Parser {
 			((Exp_aritmeticaContext)_localctx).outros_termos = outros_termos();
 
 			        ((Exp_aritmeticaContext)_localctx).name =  ((Exp_aritmeticaContext)_localctx).termo.name;
-			        ((Exp_aritmeticaContext)_localctx).temAtributo =  ((Exp_aritmeticaContext)_localctx).termo.temAtributo;
+			        ((Exp_aritmeticaContext)_localctx).atributo =  ((Exp_aritmeticaContext)_localctx).termo.atributo;
 
 			        if (!((Exp_aritmeticaContext)_localctx).outros_termos.type.equals("") && !((Exp_aritmeticaContext)_localctx).termo.type.equals(((Exp_aritmeticaContext)_localctx).outros_termos.type)) {
 			            ((Exp_aritmeticaContext)_localctx).type =  ((Exp_aritmeticaContext)_localctx).outros_termos.type;
@@ -2971,7 +2967,7 @@ public class LAParser extends Parser {
 		public String type;
 		public int indice;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public FatorContext fator;
 		public FatorContext fator() {
 			return getRuleContext(FatorContext.class,0);
@@ -3007,7 +3003,7 @@ public class LAParser extends Parser {
 			        ((TermoContext)_localctx).type =  ((TermoContext)_localctx).fator.type;
 			        ((TermoContext)_localctx).indice =  ((TermoContext)_localctx).fator.indice;
 			        ((TermoContext)_localctx).name =  ((TermoContext)_localctx).fator.name;
-			        ((TermoContext)_localctx).temAtributo =  ((TermoContext)_localctx).fator.temAtributo;
+			        ((TermoContext)_localctx).atributo =  ((TermoContext)_localctx).fator.atributo;
 			    
 			}
 		}
@@ -3096,7 +3092,7 @@ public class LAParser extends Parser {
 		public String type;
 		public int indice;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public ParcelaContext parcela;
 		public ParcelaContext parcela() {
 			return getRuleContext(ParcelaContext.class,0);
@@ -3132,7 +3128,7 @@ public class LAParser extends Parser {
 			        ((FatorContext)_localctx).type =  ((FatorContext)_localctx).parcela.type;
 			        ((FatorContext)_localctx).indice =  ((FatorContext)_localctx).parcela.indice;
 			        ((FatorContext)_localctx).name =  ((FatorContext)_localctx).parcela.name;
-			        ((FatorContext)_localctx).temAtributo =  ((FatorContext)_localctx).parcela.temAtributo;
+			        ((FatorContext)_localctx).atributo =  ((FatorContext)_localctx).parcela.atributo;
 			    
 			}
 		}
@@ -3212,7 +3208,7 @@ public class LAParser extends Parser {
 		public int indice;
 		public String name;
 		public int tipo_parcela;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Parcela_unarioContext parcela_unario;
 		public Parcela_nao_unarioContext parcela_nao_unario;
 		public Op_unarioContext op_unario() {
@@ -3261,7 +3257,7 @@ public class LAParser extends Parser {
 				        ((ParcelaContext)_localctx).type =  ((ParcelaContext)_localctx).parcela_unario.type;
 				        ((ParcelaContext)_localctx).indice =  ((ParcelaContext)_localctx).parcela_unario.indice;
 				        ((ParcelaContext)_localctx).name =  ((ParcelaContext)_localctx).parcela_unario.name;
-				        ((ParcelaContext)_localctx).temAtributo =  ((ParcelaContext)_localctx).parcela_unario.temAtributo;
+				        ((ParcelaContext)_localctx).atributo =  ((ParcelaContext)_localctx).parcela_unario.atributo;
 				    
 				}
 				break;
@@ -3297,7 +3293,7 @@ public class LAParser extends Parser {
 		public int indice;
 		public String name;
 		public String tipo_parcela_unario;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Token IDENT;
 		public Chamada_partesContext chamada_partes;
 		public Token NUM_INT;
@@ -3373,7 +3369,7 @@ public class LAParser extends Parser {
 				        ((Parcela_unarioContext)_localctx).type =  pilhaDeTabelas.getTipoDoSimbolo((((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null));
 				        pilhaDeTabelas.verificaCompatibilidadeDeParametros(((Parcela_unarioContext)_localctx).chamada_partes.tipos, (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null), (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getLine():0));
 				        ((Parcela_unarioContext)_localctx).name =  ((Parcela_unarioContext)_localctx).chamada_partes.name;;
-				        ((Parcela_unarioContext)_localctx).temAtributo =  ((Parcela_unarioContext)_localctx).chamada_partes.temAtributo;
+				        ((Parcela_unarioContext)_localctx).atributo =  ((Parcela_unarioContext)_localctx).chamada_partes.atributo;
 				    
 				}
 				break;
@@ -3566,7 +3562,7 @@ public class LAParser extends Parser {
 		public List<String> tipos;
 		public String name;
 		public int tipoChamada;
-		public boolean temAtributo;
+		public boolean atributo;
 		public ExpressaoContext expressao;
 		public Mais_expressaoContext mais_expressao;
 		public Outros_identContext outros_ident;
@@ -3616,7 +3612,7 @@ public class LAParser extends Parser {
 				((Chamada_partesContext)_localctx).mais_expressao = mais_expressao();
 
 				        ((Chamada_partesContext)_localctx).tipos =  ((Chamada_partesContext)_localctx).mais_expressao.tipos;
-				        _localctx.tipos.add(0, ((Chamada_partesContext)_localctx).expressao.type);
+				        _localctx.tipos.add(((Chamada_partesContext)_localctx).expressao.type);
 				        ((Chamada_partesContext)_localctx).tipoChamada =  1;
 				    
 				setState(578);
@@ -3633,9 +3629,9 @@ public class LAParser extends Parser {
 
 				        ((Chamada_partesContext)_localctx).id =  ((Chamada_partesContext)_localctx).outros_ident.id;
 				        ((Chamada_partesContext)_localctx).name =  ((Chamada_partesContext)_localctx).outros_ident.nome_atributo;
-				        ((Chamada_partesContext)_localctx).temAtributo =  ((Chamada_partesContext)_localctx).outros_ident.temAtributo;
+				        ((Chamada_partesContext)_localctx).atributo =  ((Chamada_partesContext)_localctx).outros_ident.atributo;
 				        ((Chamada_partesContext)_localctx).tipoChamada =  2;
-				        
+				    
 				}
 				break;
 			case 3:
@@ -3661,7 +3657,7 @@ public class LAParser extends Parser {
 		public boolean compativel;
 		public String type;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Exp_aritmeticaContext exp_aritmetica;
 		public Op_opcionalContext op_opcional;
 		public Exp_aritmeticaContext exp_aritmetica() {
@@ -3696,7 +3692,7 @@ public class LAParser extends Parser {
 			((Exp_relacionalContext)_localctx).op_opcional = op_opcional();
 
 			        ((Exp_relacionalContext)_localctx).name =  ((Exp_relacionalContext)_localctx).exp_aritmetica.name;
-			        ((Exp_relacionalContext)_localctx).temAtributo =  ((Exp_relacionalContext)_localctx).exp_aritmetica.temAtributo;
+			        ((Exp_relacionalContext)_localctx).atributo =  ((Exp_relacionalContext)_localctx).exp_aritmetica.atributo;
 
 			        if (((Exp_relacionalContext)_localctx).op_opcional.type.equals("")) {
 			            ((Exp_relacionalContext)_localctx).compativel =  ((Exp_relacionalContext)_localctx).exp_aritmetica.compativel;
@@ -3854,7 +3850,7 @@ public class LAParser extends Parser {
 		public boolean compativel;
 		public String type;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Termo_logicoContext termo_logico;
 		public Termo_logicoContext termo_logico() {
 			return getRuleContext(Termo_logicoContext.class,0);
@@ -3890,7 +3886,7 @@ public class LAParser extends Parser {
 			        ((ExpressaoContext)_localctx).compativel =  ((ExpressaoContext)_localctx).termo_logico.compativel;
 			        ((ExpressaoContext)_localctx).type =  ((ExpressaoContext)_localctx).termo_logico.type;
 			        ((ExpressaoContext)_localctx).name =  ((ExpressaoContext)_localctx).termo_logico.name;
-			        ((ExpressaoContext)_localctx).temAtributo =  ((ExpressaoContext)_localctx).termo_logico.temAtributo;
+			        ((ExpressaoContext)_localctx).atributo =  ((ExpressaoContext)_localctx).termo_logico.atributo;
 			    
 			}
 		}
@@ -3963,7 +3959,7 @@ public class LAParser extends Parser {
 		public boolean compativel;
 		public String type;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Fator_logicoContext fator_logico;
 		public Fator_logicoContext fator_logico() {
 			return getRuleContext(Fator_logicoContext.class,0);
@@ -3999,7 +3995,7 @@ public class LAParser extends Parser {
 			        ((Termo_logicoContext)_localctx).compativel =  ((Termo_logicoContext)_localctx).fator_logico.compativel;
 			        ((Termo_logicoContext)_localctx).type =  ((Termo_logicoContext)_localctx).fator_logico.type;
 			        ((Termo_logicoContext)_localctx).name =  ((Termo_logicoContext)_localctx).fator_logico.name;
-			        ((Termo_logicoContext)_localctx).temAtributo =  ((Termo_logicoContext)_localctx).fator_logico.temAtributo;
+			        ((Termo_logicoContext)_localctx).atributo =  ((Termo_logicoContext)_localctx).fator_logico.atributo;
 			    
 			}
 		}
@@ -4175,7 +4171,7 @@ public class LAParser extends Parser {
 		public boolean compativel;
 		public String type;
 		public String name;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Parcela_logicaContext parcela_logica;
 		public Op_naoContext op_nao() {
 			return getRuleContext(Op_naoContext.class,0);
@@ -4208,7 +4204,7 @@ public class LAParser extends Parser {
 			        ((Fator_logicoContext)_localctx).compativel =  ((Fator_logicoContext)_localctx).parcela_logica.compativel;
 			        ((Fator_logicoContext)_localctx).type =  ((Fator_logicoContext)_localctx).parcela_logica.tipo_parcela_logica;
 			        ((Fator_logicoContext)_localctx).name =  ((Fator_logicoContext)_localctx).parcela_logica.name;
-			        ((Fator_logicoContext)_localctx).temAtributo =  ((Fator_logicoContext)_localctx).parcela_logica.temAtributo;
+			        ((Fator_logicoContext)_localctx).atributo =  ((Fator_logicoContext)_localctx).parcela_logica.atributo;
 			    
 			}
 		}
@@ -4227,7 +4223,7 @@ public class LAParser extends Parser {
 		public String tipo_parcela_logica;
 		public String name;
 		public boolean compativel;
-		public boolean temAtributo;
+		public boolean atributo;
 		public Exp_relacionalContext exp_relacional;
 		public Exp_relacionalContext exp_relacional() {
 			return getRuleContext(Exp_relacionalContext.class,0);
@@ -4288,7 +4284,7 @@ public class LAParser extends Parser {
 				        ((Parcela_logicaContext)_localctx).tipo_parcela_logica =  ((Parcela_logicaContext)_localctx).exp_relacional.type;
 				        ((Parcela_logicaContext)_localctx).compativel =  ((Parcela_logicaContext)_localctx).exp_relacional.compativel;
 				        ((Parcela_logicaContext)_localctx).name =  ((Parcela_logicaContext)_localctx).exp_relacional.name;
-				        ((Parcela_logicaContext)_localctx).temAtributo =  ((Parcela_logicaContext)_localctx).exp_relacional.temAtributo;
+				        ((Parcela_logicaContext)_localctx).atributo =  ((Parcela_logicaContext)_localctx).exp_relacional.atributo;
 				    
 				}
 				break;

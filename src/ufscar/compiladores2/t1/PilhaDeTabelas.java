@@ -149,7 +149,8 @@ public class PilhaDeTabelas {
         }
     }
 
-    public void verificaVariavelJaExistente(List<Pair> variaveis, String tipo_variavel) {
+    public void verificaVariavelJaExistente(Pair primeira_variavel, List<Pair> variaveis, String tipo_variavel) {
+        variaveis.add(primeira_variavel);
         for (Pair variavel: variaveis) {
             if (this.existeSimbolo(variavel.a.toString())) {
                 ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));

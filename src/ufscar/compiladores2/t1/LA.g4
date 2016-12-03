@@ -63,19 +63,22 @@ IDENT_ERRADO:
         stop("Linha " + getLine() + ": erro sintatico proximo a )");
     }
 ;
+
 // Regra para reportar erro em variável string ou numérica
 NUM_ERRADO:
     ('0'..'9')+ ('a'..'z' | 'A'..'Z' | '_')+ {
-        String variavel = getText().replaceAll("[0-9]","");
+        String variavel = getText().replaceAll("[0-9]", "");
         stop("Linha " + getLine() + ": erro sintatico proximo a " + variavel);
     }
 ;
+
 // Regra oara reportar erro de comentario mal declarado
 COMENTARIO_ERRADO:
     '{' ~('\n'|'}')* '\n' {
         stop("Linha " + getLine() + ": comentario nao fechado");
     }
 ;
+
 // Regra geral para reportar simbolos não identificados no código
 ERROR:
     . {
@@ -146,11 +149,7 @@ variavel returns [String name, String tipo_variavel]
     IDENT dimensao mais_var ':' tipo {
         $name = $IDENT.text;
         $tipo_variavel = $tipo.tipodado;
-
-        List<Pair> mais_variaveis = $mais_var.nomes;
-        Pair primeira_variavel = new Pair($IDENT.text, $IDENT.line);
-        mais_variaveis.add(0, primeira_variavel);
-        pilhaDeTabelas.verificaVariavelJaExistente(mais_variaveis, $tipo_variavel);
+        pilhaDeTabelas.verificaVariavelJaExistente(new Pair($IDENT.text, $IDENT.line), $mais_var.nomes, $tipo_variavel);
     }
 ;
 
@@ -199,7 +198,7 @@ ponteiros_opcionais returns [String ponteiros, int linha]
 ;
 
 // Regra que permite definir identificadores compostos, com o uso do ponto ".".
-outros_ident returns [String id, String nome_atributo, boolean temAtributo]
+outros_ident returns [String id, String nome_atributo, boolean atributo]
     @init {
         $id = "";
         $nome_atributo = "";
@@ -209,13 +208,14 @@ outros_ident returns [String id, String nome_atributo, boolean temAtributo]
         '.' ponteiros_opcionais IDENT dimensao {
             $id += "." + $IDENT.text;
             $nome_atributo = $IDENT.text;
-            $temAtributo = true;
+            $atributo = true;
         }
     )*
 ;
 
 
-//Regra que define a dimensão sendo zero ou mais sequências de [expressão]
+// Regra que "calcula" a dimensão de uma variável, pois esta pode ser uma expressão aritmética. Essa dimensão é
+// utilizada como índice para acesso a uma posição específica de um vetor
 dimensao returns [int indice]
     @init {
         $indice = -1;
@@ -223,8 +223,8 @@ dimensao returns [int indice]
     : ('[' exp_aritmetica { $indice = $exp_aritmetica.indice; }']')*
 ;
 
-//´Tipo é definido como um registro ("registro" v1, v2 ... "fim registro") ou
-// um ponteiro (^) seguido de um tipo básico
+
+// Regra que trata registros e ponteiros (tipo_estendido)
 tipo returns [String tipodado, List<Pair> atributos]
     :
     registro {
@@ -245,14 +245,14 @@ mais_ident:
 //Define as palavres reservadas para um tipo basico
 tipo_basico returns [String tipodado]
     :
-    'literal' {
-        $tipodado = "literal";
-    } |
     'inteiro' {
         $tipodado = "inteiro";
     } |
     'real' {
         $tipodado = "real";
+    } |
+    'literal' {
+        $tipodado = "literal";
     } |
     'logico' {
         $tipodado = "logico";
@@ -367,7 +367,8 @@ parametro:
         pilhaDeTabelas.topo().adicionarSimbolo($ident_param.param, $tipo_estendido.tipodado, "parametro");
         pilhaDeTabelas.topo_funcoes().add($tipo_estendido.tipodado);
     }
-    mais_parametros;
+    mais_parametros
+;
 
 
 ident_param returns [String param]:
@@ -376,7 +377,8 @@ ident_param returns [String param]:
         $param = $IDENT.text;
     }
     dimensao
-    outros_ident;
+    outros_ident
+;
 
 
 mais_id_param:
@@ -459,7 +461,7 @@ cmd returns [int tipo_comando, String nome_variavel,  String tipo_variavel]
 ;
 
 //Permite que exista mais de uma expressão
-mais_expressao  returns [List<String> tipos]
+mais_expressao returns [List<String> tipos]
     @init {
         $tipos = new ArrayList<String>();
     }
@@ -495,7 +497,7 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
         $indice = $dimensao.indice;
 
         if ($outros_ident.nome_atributo.compareTo("") == 0) {
-            $name = ($expressao.temAtributo && $expressao.name.compareTo("") != 0) ? $expressao.name : $name;
+            $name = ($expressao.atributo && $expressao.name.compareTo("") != 0) ? $expressao.name : $name;
             $compativel = ($expressao.name.compareTo("") == 0) ? $expressao.compativel : false;
             $type = ($expressao.name.compareTo("") == 0) ? $expressao.type : $type;
         } else {
@@ -534,8 +536,8 @@ op_unario:
     '-' |
 ;
 
-//Expressẽos aritiméticas são compostas por uma composição de termos
-exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean temAtributo]
+//Expressẽos aritiméticas são compostas por um ou mais termos separados por virgulas
+exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean atributo]
     @init {
         $type = "";
         $name = "";
@@ -543,7 +545,7 @@ exp_aritmetica returns [boolean compativel, String type, int indice, String name
     :
     termo outros_termos {
         $name = $termo.name;
-        $temAtributo = $termo.temAtributo;
+        $atributo = $termo.atributo;
 
         if (!$outros_termos.type.equals("") && !$termo.type.equals($outros_termos.type)) {
             $type = $outros_termos.type;
@@ -565,8 +567,8 @@ op_adicao:
     '-'
 ;
 
-//Termo é composto por um ou mais fatores
-termo returns [String type, int indice, String name, boolean temAtributo]
+//Termo é composto por um ou mais fatores separados por virgula
+termo returns [String type, int indice, String name, boolean atributo]
     @init {
         $name = "";
     }
@@ -575,7 +577,7 @@ termo returns [String type, int indice, String name, boolean temAtributo]
         $type = $fator.type;
         $indice = $fator.indice;
         $name = $fator.name;
-        $temAtributo = $fator.temAtributo;
+        $atributo = $fator.atributo;
     }
 ;
 
@@ -594,7 +596,7 @@ outros_termos returns [String type]
 ;
 
 //Fator é composto por uma composição de parcelas
-fator returns [String type, int indice, String name, boolean temAtributo]
+fator returns [String type, int indice, String name, boolean atributo]
     @init {
         $name = "";
     }
@@ -603,7 +605,7 @@ fator returns [String type, int indice, String name, boolean temAtributo]
         $type = $parcela.type;
         $indice = $parcela.indice;
         $name = $parcela.name;
-        $temAtributo = $parcela.temAtributo;
+        $atributo = $parcela.atributo;
     }
 ;
 
@@ -612,7 +614,7 @@ fator returns [String type, int indice, String name, boolean temAtributo]
 outros_fatores:
     (op_multiplicacao fator)*;
 
-parcela returns [String type, int indice, String name, int tipo_parcela, boolean temAtributo]
+parcela returns [String type, int indice, String name, int tipo_parcela, boolean atributo]
     @init {
         $name = "";
     }
@@ -622,7 +624,7 @@ parcela returns [String type, int indice, String name, int tipo_parcela, boolean
         $type = $parcela_unario.type;
         $indice = $parcela_unario.indice;
         $name = $parcela_unario.name;
-        $temAtributo = $parcela_unario.temAtributo;
+        $atributo = $parcela_unario.atributo;
     } |
     parcela_nao_unario {
         $tipo_parcela = PARCELA_NAO_UNARIO;
@@ -634,7 +636,7 @@ parcela returns [String type, int indice, String name, int tipo_parcela, boolean
 //parcela_unario é composta de um ponteiro seguido de um identificador que pode ou não ter dimensão ou um identificador
 //seguido de uma chamada ou uma expressão entre parênteses ou até um número que pode ser inteiro ou real
 //o retorno de chamada_partes é usado para as verificações e em caso de algum problema retorna o erro devido.
-parcela_unario returns [String type, int indice, String name, String tipo_parcela_unario, boolean temAtributo]
+parcela_unario returns [String type, int indice, String name, String tipo_parcela_unario, boolean atributo]
     @init {
         $type = "";
         $indice = -1;
@@ -655,7 +657,7 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
         $type = pilhaDeTabelas.getTipoDoSimbolo($IDENT.text);
         pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
         $name = $chamada_partes.name;;
-        $temAtributo = $chamada_partes.temAtributo;
+        $atributo = $chamada_partes.atributo;
     } |
     NUM_INT {
         $tipo_parcela_unario = "INTEIRO";
@@ -694,7 +696,7 @@ outras_parcelas:
     ('%' parcela)*;
 
 
-chamada_partes returns [String id, List<String> tipos, String name, int tipoChamada, boolean temAtributo]
+chamada_partes returns [String id, List<String> tipos, String name, int tipoChamada, boolean atributo]
     @init {
         $id = "";
         $tipos = new ArrayList<String>();
@@ -703,29 +705,29 @@ chamada_partes returns [String id, List<String> tipos, String name, int tipoCham
     :
     '(' expressao mais_expressao {
         $tipos = $mais_expressao.tipos;
-        $tipos.add(0, $expressao.type);
+        $tipos.add($expressao.type);
         $tipoChamada = 1;
     }
     ')' |
     outros_ident dimensao {
         $id = $outros_ident.id;
         $name = $outros_ident.nome_atributo;
-        $temAtributo = $outros_ident.temAtributo;
+        $atributo = $outros_ident.atributo;
         $tipoChamada = 2;
-        } |
+    } |
     { $tipoChamada = 3; }
 ;
 
 
 //Expressão relacional é composta por uma expressão aritimética seguida de zero ou mais operadores opcionais
-exp_relacional returns [boolean compativel, String type, String name, boolean temAtributo]
+exp_relacional returns [boolean compativel, String type, String name, boolean atributo]
     @init {
         $name = "";
     }
     :
     exp_aritmetica op_opcional {
         $name = $exp_aritmetica.name;
-        $temAtributo = $exp_aritmetica.temAtributo;
+        $atributo = $exp_aritmetica.atributo;
 
         if ($op_opcional.type.equals("")) {
             $compativel = $exp_aritmetica.compativel;
@@ -736,6 +738,7 @@ exp_relacional returns [boolean compativel, String type, String name, boolean te
         }
     }
 ;
+
 // Operador opcional
 op_opcional returns [String type, boolean compativel]
     @init {
@@ -759,7 +762,7 @@ op_relacional:
     ;
 
 //Expressão é composta por um termo lógico seguido por um ou vários termos lógicos
-expressao returns [boolean compativel, String type, String name, boolean temAtributo]
+expressao returns [boolean compativel, String type, String name, boolean atributo]
     @init {
         $name = "";
     }
@@ -768,7 +771,7 @@ expressao returns [boolean compativel, String type, String name, boolean temAtri
         $compativel = $termo_logico.compativel;
         $type = $termo_logico.type;
         $name = $termo_logico.name;
-        $temAtributo = $termo_logico.temAtributo;
+        $atributo = $termo_logico.atributo;
     }
 ;
 
@@ -776,8 +779,8 @@ op_nao:
     'nao' |
  ;
 
-//Termo lógico é composto por um ou mais fatores lógicos
-termo_logico returns [boolean compativel, String type, String name, boolean temAtributo]
+//Um termo lógico é composto por um ou mais fatores lógicos
+termo_logico returns [boolean compativel, String type, String name, boolean atributo]
     @init {
         $name = "";
     }
@@ -786,7 +789,7 @@ termo_logico returns [boolean compativel, String type, String name, boolean temA
         $compativel = $fator_logico.compativel;
         $type = $fator_logico.type;
         $name = $fator_logico.name;
-        $temAtributo = $fator_logico.temAtributo;
+        $atributo = $fator_logico.atributo;
     }
 ;
 
@@ -799,20 +802,20 @@ outros_fatores_logicos:
     'e' fator_logico outros_fatores_logicos |
 ;
 
-//fator_logico é composto de uma parcela lógica que pode ser negada ou não (pos op_nao levando à vazio)
-fator_logico returns [boolean compativel, String type, String name, boolean temAtributo]
+//fator_logico é uma parecela lógica, negada ou não (pos op_nao leva à vazio)
+fator_logico returns [boolean compativel, String type, String name, boolean atributo]
     :
     op_nao parcela_logica {
         $compativel = $parcela_logica.compativel;
         $type = $parcela_logica.tipo_parcela_logica;
         $name = $parcela_logica.name;
-        $temAtributo = $parcela_logica.temAtributo;
+        $atributo = $parcela_logica.atributo;
     }
 ;
 
 
-//Parcela_logica que que assume valor verdadeiro, falso ou alguma expressão relacional
-parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean temAtributo]
+//Parcela_logica que é verdadeira, falsa ou uma expressão relacional
+parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean atributo]
     @init {
         $name = "";
     }
@@ -827,6 +830,6 @@ parcela_logica returns [String tipo_parcela_logica, String name, boolean compati
         $tipo_parcela_logica = $exp_relacional.type;
         $compativel = $exp_relacional.compativel;
         $name = $exp_relacional.name;
-        $temAtributo = $exp_relacional.temAtributo;
+        $atributo = $exp_relacional.atributo;
     }
 ;
