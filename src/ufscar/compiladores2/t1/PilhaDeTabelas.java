@@ -94,7 +94,7 @@ public class PilhaDeTabelas {
         boolean compativel = true;
         List<String> tipos_dos_parametros = this.getTiposDasFuncoes(nome_funcao);
 
-        if (tipos_dos_parametros != null) {
+        if (tipos_dos_parametros != null && parametros.size() > 0) {
             for (int i = 0; i < tipos_dos_parametros.size() && compativel; i++) {
                 try {
                     compativel = !(tipos_dos_parametros.get(i).compareTo(parametros.get(i)) != 0 &&
@@ -106,6 +106,36 @@ public class PilhaDeTabelas {
         }
         if (!compativel) {
             ErrosSemanticos.erroIncompatibilidadeParametros(nome_funcao, linha);
+        }
+    }
+
+    public void verificaAtribuicaoDePonteiro(String nome_variavel, int linha, String tipo_expressao) {
+        String tipo_variavel = this.getTipoDoSimbolo(nome_variavel).replace("^", "");
+
+        if (tipo_variavel.compareTo(tipo_expressao) != 0) {
+            ErrosSemanticos.erroVariavelNaoCompativel("^" + nome_variavel, linha);
+        }
+    }
+
+    public void verificaCompatibilidadeDeAtribuicao(boolean compativel, String tipo, String variavel, String atributo, int indice, int linha) {
+        if (!this.existeSimbolo(variavel)) {
+            ErrosSemanticos.erroVariavelNaoExiste(variavel, linha);
+        } else if (!compativel && !tipo.equals("") && !this.getTipoDoSimbolo(variavel).equals(tipo)) {
+            if (!(this.getTipoDoSimbolo(variavel).equals("real") && tipo.equals("inteiro"))) {
+                if (indice != -1) {
+                      ErrosSemanticos.erroVariavelNaoCompativel(variavel + "[" + indice + "]", linha);
+                } else if (!atributo.equals("")) {
+                     if (!this.getTipoDoAtributo(atributo).equals(tipo)) {
+                        if (!(this.getTipoDoAtributo(atributo).equals("real") && tipo.equals("inteiro"))) {
+                            if (!this.getTipoDoAtributo(atributo).equals(this.getTipoDoSimbolo(variavel))) {
+                                ErrosSemanticos.erroVariavelNaoCompativel(variavel + "." + atributo, linha);
+                            }
+                        }
+                     }
+                } else {
+                      ErrosSemanticos.erroVariavelNaoCompativel(variavel, linha);
+                }
+            }
         }
     }
 

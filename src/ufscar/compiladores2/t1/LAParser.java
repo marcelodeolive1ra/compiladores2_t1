@@ -601,6 +601,7 @@ public class LAParser extends Parser {
 
 	public static class Ponteiros_opcionaisContext extends ParserRuleContext {
 		public String ponteiros;
+		public int linha;
 		public Ponteiros_opcionaisContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -688,7 +689,6 @@ public class LAParser extends Parser {
 
 		        ((Outros_identContext)_localctx).id =  "";
 		        ((Outros_identContext)_localctx).nome_atributo =  "";
-		        ((Outros_identContext)_localctx).temAtributo =  false;
 		    
 		int _la;
 		try {
@@ -1921,7 +1921,7 @@ public class LAParser extends Parser {
 	}
 
 	public static class CmdContext extends ParserRuleContext {
-		public int tipoCmd;
+		public int tipo_comando;
 		public String nome_variavel;
 		public String tipo_variavel;
 		public IdentificadorContext identificador;
@@ -1957,11 +1957,11 @@ public class LAParser extends Parser {
 			return getRuleContext(SelecaoContext.class,0);
 		}
 		public TerminalNode IDENT() { return getToken(LAParser.IDENT, 0); }
-		public Outros_identContext outros_ident() {
-			return getRuleContext(Outros_identContext.class,0);
-		}
 		public DimensaoContext dimensao() {
 			return getRuleContext(DimensaoContext.class,0);
+		}
+		public Outros_identContext outros_ident() {
+			return getRuleContext(Outros_identContext.class,0);
 		}
 		public ChamadaContext chamada() {
 			return getRuleContext(ChamadaContext.class,0);
@@ -2001,7 +2001,7 @@ public class LAParser extends Parser {
 				setState(360);
 				match(T__22);
 
-				        ((CmdContext)_localctx).tipoCmd =  LEIA;
+				        ((CmdContext)_localctx).tipo_comando =  LEIA;
 				        ((CmdContext)_localctx).nome_variavel =  ((CmdContext)_localctx).identificador.nome_variavel;
 				        ((CmdContext)_localctx).tipo_variavel =  pilhaDeTabelas.getTipoDoSimbolo(((CmdContext)_localctx).identificador.nome_variavel);
 				    
@@ -2021,7 +2021,7 @@ public class LAParser extends Parser {
 				setState(367);
 				match(T__22);
 
-				        ((CmdContext)_localctx).tipoCmd =  ESCREVA;
+				        ((CmdContext)_localctx).tipo_comando =  ESCREVA;
 				        ((CmdContext)_localctx).nome_variavel =  ((CmdContext)_localctx).expressao.name;
 				        ((CmdContext)_localctx).tipo_variavel =  ((CmdContext)_localctx).expressao.type;
 				    
@@ -2043,7 +2043,7 @@ public class LAParser extends Parser {
 				setState(375);
 				match(T__31);
 
-				        ((CmdContext)_localctx).tipoCmd =  SE;
+				        ((CmdContext)_localctx).tipo_comando =  SE;
 				    
 				}
 				break;
@@ -2063,7 +2063,7 @@ public class LAParser extends Parser {
 				setState(383);
 				match(T__34);
 
-				        ((CmdContext)_localctx).tipoCmd =  CASO;
+				        ((CmdContext)_localctx).tipo_comando =  CASO;
 				    
 				}
 				break;
@@ -2089,7 +2089,7 @@ public class LAParser extends Parser {
 				setState(394);
 				match(T__39);
 
-				        ((CmdContext)_localctx).tipoCmd =  PARA;
+				        ((CmdContext)_localctx).tipo_comando =  PARA;
 				        ((CmdContext)_localctx).nome_variavel =  (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null);
 				    
 				}
@@ -2108,7 +2108,7 @@ public class LAParser extends Parser {
 				setState(401);
 				match(T__41);
 
-				        ((CmdContext)_localctx).tipoCmd =  ENQUANTO;
+				        ((CmdContext)_localctx).tipo_comando =  ENQUANTO;
 				    
 				}
 				break;
@@ -2124,7 +2124,7 @@ public class LAParser extends Parser {
 				setState(407);
 				expressao();
 
-				        ((CmdContext)_localctx).tipoCmd =  FACA;
+				        ((CmdContext)_localctx).tipo_comando =  FACA;
 				    
 				}
 				break;
@@ -2134,17 +2134,18 @@ public class LAParser extends Parser {
 				setState(410);
 				match(T__8);
 				setState(411);
-				match(IDENT);
+				((CmdContext)_localctx).IDENT = match(IDENT);
 				setState(412);
-				outros_ident();
-				setState(413);
 				dimensao();
+				setState(413);
+				outros_ident();
 				setState(414);
 				match(T__36);
 				setState(415);
-				expressao();
+				((CmdContext)_localctx).expressao = expressao();
 
-				        ((CmdContext)_localctx).tipoCmd =  PONTEIRO;
+				        ((CmdContext)_localctx).tipo_comando =  PONTEIRO;
+				        pilhaDeTabelas.verificaAtribuicaoDePonteiro((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null), (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0), ((CmdContext)_localctx).expressao.type);
 				    
 				}
 				break;
@@ -2156,7 +2157,7 @@ public class LAParser extends Parser {
 				setState(419);
 				chamada();
 
-				        ((CmdContext)_localctx).tipoCmd =  CHAMADA;
+				        ((CmdContext)_localctx).tipo_comando =  CHAMADA;
 				    
 				}
 				break;
@@ -2168,31 +2169,9 @@ public class LAParser extends Parser {
 				setState(423);
 				((CmdContext)_localctx).atribuicao = atribuicao();
 
-				        ((CmdContext)_localctx).tipoCmd =  ATRIBUICAO;
-
-				        if (!pilhaDeTabelas.existeSimbolo((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null))) {
-				            ErrosSemanticos.erroVariavelNaoExiste((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null), (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0));
-				        } else if (!((CmdContext)_localctx).atribuicao.compativel && !((CmdContext)_localctx).atribuicao.type.equals("") && !pilhaDeTabelas.getTipoDoSimbolo((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null)).equals(((CmdContext)_localctx).atribuicao.type)) {
-				            if (!(pilhaDeTabelas.getTipoDoSimbolo((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null)).equals("real") && ((CmdContext)_localctx).atribuicao.type.equals("inteiro"))) {
-				                if (((CmdContext)_localctx).atribuicao.indice != -1) {
-				                      ErrosSemanticos.erroVariavelNaoCompativel((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null) + "[" + ((CmdContext)_localctx).atribuicao.indice + "]", (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0));
-				                } else if (!((CmdContext)_localctx).atribuicao.name.equals("")) {
-				                     if (!pilhaDeTabelas.getTipoDoAtributo(((CmdContext)_localctx).atribuicao.name).equals(((CmdContext)_localctx).atribuicao.type)) {
-				                        if (!(pilhaDeTabelas.getTipoDoAtributo(((CmdContext)_localctx).atribuicao.name).equals("real") && ((CmdContext)_localctx).atribuicao.type.equals("inteiro"))) {
-				                            if (!pilhaDeTabelas.getTipoDoAtributo(((CmdContext)_localctx).atribuicao.name).equals(pilhaDeTabelas.getTipoDoSimbolo((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null)))) {
-				                                ErrosSemanticos.erroVariavelNaoCompativel((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null) + "." + ((CmdContext)_localctx).atribuicao.name, (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0));
-				                            }
-				                        }
-				                     }
-				                } else {
-				                      ErrosSemanticos.erroVariavelNaoCompativel((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null), (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0));
-				                }
-				            }
-				        }
-
-				        if ((((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null).equals("ponteiro") && ((CmdContext)_localctx).atribuicao.type.equals("")) {
-				             ErrosSemanticos.erroVariavelNaoCompativel("^" + (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null), 14);
-				        }
+				        ((CmdContext)_localctx).tipo_comando =  ATRIBUICAO;
+				        pilhaDeTabelas.verificaCompatibilidadeDeAtribuicao(((CmdContext)_localctx).atribuicao.compativel, ((CmdContext)_localctx).atribuicao.type, (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getText():null),
+				            ((CmdContext)_localctx).atribuicao.name, ((CmdContext)_localctx).atribuicao.indice, (((CmdContext)_localctx).IDENT!=null?((CmdContext)_localctx).IDENT.getLine():0));
 				    
 				}
 				break;
@@ -2204,8 +2183,7 @@ public class LAParser extends Parser {
 				setState(427);
 				expressao();
 
-				        ((CmdContext)_localctx).tipoCmd =  RETORNE;
-
+				        ((CmdContext)_localctx).tipo_comando =  RETORNE;
 				        if (!pilhaDeTabelas.topo().getType().equals("funcao")) {
 				            ErrosSemanticos.escopoNaoPermitido((((CmdContext)_localctx).retorne!=null?((CmdContext)_localctx).retorne.getLine():0));
 				        }
@@ -2412,7 +2390,6 @@ public class LAParser extends Parser {
 
 		        ((AtribuicaoContext)_localctx).type =  "";
 		        ((AtribuicaoContext)_localctx).name =  "";
-		        ((AtribuicaoContext)_localctx).compativel =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -2878,10 +2855,8 @@ public class LAParser extends Parser {
 		Exp_aritmeticaContext _localctx = new Exp_aritmeticaContext(_ctx, getState());
 		enterRule(_localctx, 84, RULE_exp_aritmetica);
 
-		        ((Exp_aritmeticaContext)_localctx).compativel =  false;
 		        ((Exp_aritmeticaContext)_localctx).type =  "";
 		        ((Exp_aritmeticaContext)_localctx).name =  "";
-		        ((Exp_aritmeticaContext)_localctx).temAtributo =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -3020,7 +2995,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 90, RULE_termo);
 
 		        ((TermoContext)_localctx).name =  "";
-		        ((TermoContext)_localctx).temAtributo =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -3146,7 +3120,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 94, RULE_fator);
 
 		        ((FatorContext)_localctx).name =  "";
-		        ((FatorContext)_localctx).temAtributo = false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -3267,7 +3240,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 98, RULE_parcela);
 
 		        ((ParcelaContext)_localctx).name =  "";
-		        ((ParcelaContext)_localctx).temAtributo =  false;
 		    
 		try {
 			setState(534);
@@ -3363,7 +3335,6 @@ public class LAParser extends Parser {
 		        ((Parcela_unarioContext)_localctx).type =  "";
 		        ((Parcela_unarioContext)_localctx).indice =  -1;
 		        ((Parcela_unarioContext)_localctx).name =  "";
-		        ((Parcela_unarioContext)_localctx).temAtributo =  false;
 		    
 		try {
 			setState(555);
@@ -3400,9 +3371,7 @@ public class LAParser extends Parser {
 				        }
 
 				        ((Parcela_unarioContext)_localctx).type =  pilhaDeTabelas.getTipoDoSimbolo((((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null));
-				        if (((Parcela_unarioContext)_localctx).chamada_partes.tipos.size() > 0) {
-				            pilhaDeTabelas.verificaCompatibilidadeDeParametros(((Parcela_unarioContext)_localctx).chamada_partes.tipos, (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null), (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getLine():0));
-				        }
+				        pilhaDeTabelas.verificaCompatibilidadeDeParametros(((Parcela_unarioContext)_localctx).chamada_partes.tipos, (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getText():null), (((Parcela_unarioContext)_localctx).IDENT!=null?((Parcela_unarioContext)_localctx).IDENT.getLine():0));
 				        ((Parcela_unarioContext)_localctx).name =  ((Parcela_unarioContext)_localctx).chamada_partes.name;;
 				        ((Parcela_unarioContext)_localctx).temAtributo =  ((Parcela_unarioContext)_localctx).chamada_partes.temAtributo;
 				    
@@ -3490,7 +3459,7 @@ public class LAParser extends Parser {
 		Parcela_nao_unarioContext _localctx = new Parcela_nao_unarioContext(_ctx, getState());
 		enterRule(_localctx, 102, RULE_parcela_nao_unario);
 
-		        ((Parcela_nao_unarioContext)_localctx).name = "";
+		        ((Parcela_nao_unarioContext)_localctx).name =  "";
 		    
 		try {
 			setState(565);
@@ -3631,7 +3600,6 @@ public class LAParser extends Parser {
 		        ((Chamada_partesContext)_localctx).id =  "";
 		        ((Chamada_partesContext)_localctx).tipos =  new ArrayList<String>();
 		        ((Chamada_partesContext)_localctx).name =  "";
-		        ((Chamada_partesContext)_localctx).temAtributo =  false;
 		    
 		try {
 			setState(585);
@@ -3718,7 +3686,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 108, RULE_exp_relacional);
 
 		        ((Exp_relacionalContext)_localctx).name =  "";
-		        ((Exp_relacionalContext)_localctx).temAtributo =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -3911,7 +3878,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 114, RULE_expressao);
 
 		        ((ExpressaoContext)_localctx).name =  "";
-		        ((ExpressaoContext)_localctx).temAtributo =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -4021,7 +3987,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 118, RULE_termo_logico);
 
 		        ((Termo_logicoContext)_localctx).name =  "";
-		        ((Termo_logicoContext)_localctx).temAtributo =  false;
 		    
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -4283,8 +4248,6 @@ public class LAParser extends Parser {
 		enterRule(_localctx, 126, RULE_parcela_logica);
 
 		        ((Parcela_logicaContext)_localctx).name =  "";
-		        ((Parcela_logicaContext)_localctx).temAtributo =  false;
-		        ((Parcela_logicaContext)_localctx).compativel =  false;
 		    
 		try {
 			setState(637);
@@ -4492,8 +4455,8 @@ public class LAParser extends Parser {
 		";\2\u0191\u0192\7)\2\2\u0192\u0193\5:\36\2\u0193\u0194\7,\2\2\u0194\u0195"+
 		"\b\37\1\2\u0195\u01b1\3\2\2\2\u0196\u0197\7)\2\2\u0197\u0198\5:\36\2\u0198"+
 		"\u0199\7(\2\2\u0199\u019a\5t;\2\u019a\u019b\b\37\1\2\u019b\u01b1\3\2\2"+
-		"\2\u019c\u019d\7\13\2\2\u019d\u019e\7>\2\2\u019e\u019f\5\22\n\2\u019f"+
-		"\u01a0\5\24\13\2\u01a0\u01a1\7\'\2\2\u01a1\u01a2\5t;\2\u01a2\u01a3\b\37"+
+		"\2\u019c\u019d\7\13\2\2\u019d\u019e\7>\2\2\u019e\u019f\5\24\13\2\u019f"+
+		"\u01a0\5\22\n\2\u01a0\u01a1\7\'\2\2\u01a1\u01a2\5t;\2\u01a2\u01a3\b\37"+
 		"\1\2\u01a3\u01b1\3\2\2\2\u01a4\u01a5\7>\2\2\u01a5\u01a6\5B\"\2\u01a6\u01a7"+
 		"\b\37\1\2\u01a7\u01b1\3\2\2\2\u01a8\u01a9\7>\2\2\u01a9\u01aa\5D#\2\u01aa"+
 		"\u01ab\b\37\1\2\u01ab\u01b1\3\2\2\2\u01ac\u01ad\7-\2\2\u01ad\u01ae\5t"+

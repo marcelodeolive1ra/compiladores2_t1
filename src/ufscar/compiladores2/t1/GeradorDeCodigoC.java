@@ -203,7 +203,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
     @Override
     public String visitCmd(LAParser.CmdContext ctx) {
         if (ctx != null) {
-            switch (ctx.tipoCmd) {
+            switch (ctx.tipo_comando) {
                 case LEIA:
                     if (ctx.tipo_variavel.compareTo(LITERAL) == 0) { // trata o caso de literais
                         this.println("\tgets(" + ctx.nome_variavel + ");");

@@ -190,7 +190,7 @@ identificador returns [String nome_variavel]
 
 // Regra para tratatamento dos ponteiros, que são opcionais para identificadores.
 // O único retorno é a quantidade de ponteiros a serem adicionados antes do identificador.
-ponteiros_opcionais returns [String ponteiros]
+ponteiros_opcionais returns [String ponteiros, int linha]
     @init {
         $ponteiros = "";
     }
@@ -203,7 +203,6 @@ outros_ident returns [String id, String nome_atributo, boolean temAtributo]
     @init {
         $id = "";
         $nome_atributo = "";
-        $temAtributo = false;
     }
     :
     (
@@ -412,73 +411,51 @@ comandos:
 //O trecho a seguir define todas as instruções da linguagem e os seus formatos
 //além disso faz as devidas verificaçoes para a definir se é possivel
 //realizar a atribuição, se nao for retorna o erro adequado
-cmd returns [ int tipoCmd, String nome_variavel,  String tipo_variavel]
+cmd returns [int tipo_comando, String nome_variavel,  String tipo_variavel]
     @id {
         $nome_variavel = "";
         $tipo_variavel = "";
     }
     : 'leia' '(' identificador mais_ident ')' {
-        $tipoCmd = LEIA;
+        $tipo_comando = LEIA;
         $nome_variavel = $identificador.nome_variavel;
         $tipo_variavel = pilhaDeTabelas.getTipoDoSimbolo($identificador.nome_variavel);
     } |
     'escreva' '(' expressao mais_expressao ')' {
-        $tipoCmd = ESCREVA;
+        $tipo_comando = ESCREVA;
         $nome_variavel = $expressao.name;
         $tipo_variavel = $expressao.type;
     } |
     'se' expressao 'entao' comandos senao_opcional 'fim_se' {
-        $tipoCmd = SE;
+        $tipo_comando = SE;
     } |
     'caso' exp_aritmetica 'seja' selecao senao_opcional 'fim_caso' {
-        $tipoCmd = CASO;
+        $tipo_comando = CASO;
     } |
     'para' IDENT '<-' exp_aritmetica 'ate' exp_aritmetica 'faca' comandos 'fim_para' {
-        $tipoCmd = PARA;
+        $tipo_comando = PARA;
         $nome_variavel = $IDENT.text;
     } |
     'enquanto' expressao 'faca' comandos 'fim_enquanto' {
-        $tipoCmd = ENQUANTO;
+        $tipo_comando = ENQUANTO;
     } |
     'faca' comandos 'ate' expressao {
-        $tipoCmd = FACA;
+        $tipo_comando = FACA;
     } |
-    '^' IDENT outros_ident dimensao '<-' expressao {
-        $tipoCmd = PONTEIRO;
+    '^' IDENT dimensao outros_ident '<-' expressao {
+        $tipo_comando = PONTEIRO;
+        pilhaDeTabelas.verificaAtribuicaoDePonteiro($IDENT.text, $IDENT.line, $expressao.type);
     } |
     IDENT chamada {
-        $tipoCmd = CHAMADA;
+        $tipo_comando = CHAMADA;
     } |
     IDENT atribuicao {
-        $tipoCmd = ATRIBUICAO;
-
-        if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text, $IDENT.line);
-        } else if (!$atribuicao.compativel && !$atribuicao.type.equals("") && !pilhaDeTabelas.getTipoDoSimbolo($IDENT.text).equals($atribuicao.type)) {
-            if (!(pilhaDeTabelas.getTipoDoSimbolo($IDENT.text).equals("real") && $atribuicao.type.equals("inteiro"))) {
-                if ($atribuicao.indice != -1) {
-                      ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text + "[" + $atribuicao.indice + "]", $IDENT.line);
-                } else if (!$atribuicao.name.equals("")) {
-                     if (!pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals($atribuicao.type)) {
-                        if (!(pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals("real") && $atribuicao.type.equals("inteiro"))) {
-                            if (!pilhaDeTabelas.getTipoDoAtributo($atribuicao.name).equals(pilhaDeTabelas.getTipoDoSimbolo($IDENT.text))) {
-                                ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text + "." + $atribuicao.name, $IDENT.line);
-                            }
-                        }
-                     }
-                } else {
-                      ErrosSemanticos.erroVariavelNaoCompativel($IDENT.text, $IDENT.line);
-                }
-            }
-        }
-
-        if ($IDENT.text.equals("ponteiro") && $atribuicao.type.equals("")) {
-             ErrosSemanticos.erroVariavelNaoCompativel("^" + $IDENT.text, 14);
-        }
+        $tipo_comando = ATRIBUICAO;
+        pilhaDeTabelas.verificaCompatibilidadeDeAtribuicao($atribuicao.compativel, $atribuicao.type, $IDENT.text,
+            $atribuicao.name, $atribuicao.indice, $IDENT.line);
     } |
     retorne = 'retorne' expressao {
-        $tipoCmd = RETORNE;
-
+        $tipo_comando = RETORNE;
         if (!pilhaDeTabelas.topo().getType().equals("funcao")) {
             ErrosSemanticos.escopoNaoPermitido($retorne.line);
         }
@@ -515,7 +492,6 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
     @init {
         $type = "";
         $name = "";
-        $compativel = false;
     }
     :
     outros_ident dimensao '<-' expressao {
@@ -567,10 +543,8 @@ op_unario:
 //Expressẽos aritiméticas são compostas por um ou mais termos separados por virgulas
 exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean temAtributo]
     @init {
-        $compativel = false;
         $type = "";
         $name = "";
-        $temAtributo = false;
     }
     :
     termo outros_termos {
@@ -601,7 +575,6 @@ op_adicao:
 termo returns [String type, int indice, String name, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
     }
     :
     fator outros_fatores {
@@ -631,7 +604,6 @@ outros_termos returns [String type]
 fator returns [String type, int indice, String name, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo =false;
     }
     :
     parcela outras_parcelas {
@@ -650,7 +622,6 @@ outros_fatores:
 parcela returns [String type, int indice, String name, int tipo_parcela, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
     }
     :
     op_unario parcela_unario {
@@ -680,7 +651,6 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
         $type = "";
         $indice = -1;
         $name = "";
-        $temAtributo = false;
     }
     :
     '^' IDENT outros_ident dimensao {
@@ -695,9 +665,7 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
         }
 
         $type = pilhaDeTabelas.getTipoDoSimbolo($IDENT.text);
-        if ($chamada_partes.tipos.size() > 0) {
-            pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
-        }
+        pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
         $name = $chamada_partes.name;;
         $temAtributo = $chamada_partes.temAtributo;
     } |
@@ -720,7 +688,7 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
 
 parcela_nao_unario returns [String type, String name]
     @init {
-        $name="";
+        $name = "";
     }
     :
     '&' IDENT outros_ident dimensao {
@@ -743,7 +711,6 @@ chamada_partes returns [String id, List<String> tipos, String name, int tipoCham
         $id = "";
         $tipos = new ArrayList<String>();
         $name = "";
-        $temAtributo = false;
     }
     :
     '(' expressao mais_expressao {
@@ -767,7 +734,6 @@ chamada_partes returns [String id, List<String> tipos, String name, int tipoCham
 exp_relacional returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
     }
     :
     exp_aritmetica op_opcional {
@@ -809,7 +775,6 @@ op_relacional:
 expressao returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
     }
     :
     termo_logico outros_termos_logicos {
@@ -828,7 +793,6 @@ op_nao:
 termo_logico returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
     }
     :
     fator_logico outros_fatores_logicos {
@@ -864,8 +828,6 @@ fator_logico returns [boolean compativel, String type, String name, boolean temA
 parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean temAtributo]
     @init {
         $name = "";
-        $temAtributo = false;
-        $compativel = false;
     }
     :
     'verdadeiro' {
