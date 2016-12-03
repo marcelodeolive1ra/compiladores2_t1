@@ -22,7 +22,7 @@ grammar LA;
  REGRAS SINTÁTICAS
  *********************************************************************************************************/
 
-// Regra para identificadores (números, letras e underscores, não podendo começar com números
+// Regra para identificadores (números, letras e underscores, não podendo começar com números)
 IDENT:
     ('a'..'z' | 'A'..'Z' | '_') ('a'..'z' | 'A'..'Z' | '0'..'9' | '_')*;
 
@@ -63,20 +63,20 @@ IDENT_ERRADO:
         stop("Linha " + getLine() + ": erro sintatico proximo a )");
     }
 ;
-
+// Regra para reportar erro em variável string ou numérica
 NUM_ERRADO:
     ('0'..'9')+ ('a'..'z' | 'A'..'Z' | '_')+ {
         String variavel = getText().replaceAll("[0-9]","");
         stop("Linha " + getLine() + ": erro sintatico proximo a " + variavel);
     }
 ;
-
+// Regra oara reportar erro de comentario mal declarado
 COMENTARIO_ERRADO:
     '{' ~('\n'|'}')* '\n' {
         stop("Linha " + getLine() + ": comentario nao fechado");
     }
 ;
-
+// Regra geral para reportar simbolos não identificados no código
 ERROR:
     . {
         stop("Linha " + getLine() + ": " + getText() + " - simbolo nao identificado");
@@ -215,7 +215,7 @@ outros_ident returns [String id, String nome_atributo, boolean temAtributo]
 ;
 
 
-//Define a dimensão sendo zero ou mais sequencidas de [expressão]
+//Regra que define a dimensão sendo zero ou mais sequências de [expressão]
 dimensao returns [int indice]
     @init {
         $indice = -1;
@@ -237,7 +237,7 @@ tipo returns [String tipodado, List<Pair> atributos]
     }
 ;
 
-//mais_ident permite criar N "identificador" todos separados por ','
+//mais_ident permite criar um ou mais "identificador" separados por ','
 mais_ident:
     (',' identificador)*;
 
@@ -259,8 +259,7 @@ tipo_basico returns [String tipodado]
     }
 ;
 
-//Define um tipo basico ou um identificador(verifica a existencia do tipo que está
-//sendo definido
+//Define um tipo basico ou um identificador e verifica a existencia do tipo que está sendo definido
 tipo_basico_ident returns [String tipodado]
     :
     tipo_basico {
@@ -291,8 +290,7 @@ valor_constante
     'falso'
     ;
 
-//define um registro que tem a forma "registro" seguido de uma ou mais variáveis
-//"fim_registro"
+//Regra que define o formato de um registro, tendo a forma "registro" seguido de uma ou mais variáveis
 registro returns [List<Pair> atributos]
     @init {
         $atributos = new ArrayList<Pair>();
@@ -334,10 +332,10 @@ mais_var_registro returns [List<String> atributos]
 ;
 
 
-//Uma declaração_global é composta por "procedimento nome_procedimento (parametros)" seguido de
-//declarações e comandos terminado pela palavra reservada "fim_procedimento" ou
+//Regra que define declaração_global sendo composta por "procedimento nome_procedimento (parametros)" seguido de
+//declarações e comandos terminados pela palavra reservada "fim_procedimento" ou
 //composta por "funcao nome_funcao (parametros) :" seguido de um tipo estendido,
-//declarações e comandos, sendo terminado por "fim_funcao"
+//declarações e comandos sendo terminados por "fim_funcao"
 declaracao_global
     :
     'procedimento' IDENT {
@@ -362,9 +360,8 @@ parametros_opcional:
     parametro |
 ;
 
-//parametro pode possuir uma variavel, possui um ou mais indentificadores
-//e um tipo_estendido seguido parametros. Chama a classe funcoes para adicionar
-//um tipodado na tabela.
+//Regra que define que parametro deve possuir uma variavel, um ou mais indentificadores
+//e um tipo_estendido seguido dos parametros. Chama a classe funcoes para adicionar um tipodado na tabela de símbolos.
 parametro:
     var_opcional ident_param mais_id_param ':' tipo_estendido {
         pilhaDeTabelas.topo().adicionarSimbolo($ident_param.param, $tipo_estendido.tipodado, "parametro");
@@ -402,15 +399,14 @@ declaracoes_locais:
 corpo:
     declaracoes_locais comandos;
 
-//Define que os commandos devem possuir ao menos uma instrução e podem ser seguidos de mais
-//instruções
+//Regra que define que os commandos devem ter ao menos uma instrução
 comandos:
     cmd*;
 
 
-//O trecho a seguir define todas as instruções da linguagem e os seus formatos
-//além disso faz as devidas verificaçoes para a definir se é possivel
-//realizar a atribuição, se nao for retorna o erro adequado
+//Regra principal de definição de instruções da linguagem LA
+//Realiza verificações de formato e contexto para realizar as atribuições,
+// retornando os erros devidos quando existirem falhas
 cmd returns [int tipo_comando, String nome_variavel,  String tipo_variavel]
     @id {
         $nome_variavel = "";
@@ -480,14 +476,14 @@ senao_opcional:
     'senao' comandos |
 ;
 
-//chamada de atribuição é composta por argumentos opcionais entre parenteses ou
-//um ou mais identificador podendo ou não ser mais dimensões seguido de "<-" expressão
+//chamada de atribuição pode ser composta por argumentos opcionais entre parenteses ou por um ou mais identificadores
+// podendo ou não serem mais dimensões seguidos de "<-" expressão
 chamada:
     '(' argumentos_opcional ')'
 ;
 
-//Define o formato de uma atribuição, seta os valores das variaveis "compativel,
-//String, indice e name" que sao retornadas para o cmd.
+//Regra para definir atribuição, setando valores das variaveis compatíveis (String, indice e name) que
+// são retornadas para a funcão cmd.
 atribuicao returns [boolean compativel, String type, int indice, String name]
     @init {
         $type = "";
@@ -527,11 +523,9 @@ mais_constantes:
     ',' constantes |
 ;
 
-//o operador unário pode ser vazio
 numero_intervalo:
     op_unario NUM_INT intervalo_opcional;
 
-//o operador de unario pode ser vazio
 intervalo_opcional:
     '..' op_unario NUM_INT |
 ;
@@ -540,7 +534,7 @@ op_unario:
     '-' |
 ;
 
-//Expressẽos aritiméticas são compostas por um ou mais termos separados por virgulas
+//Expressẽos aritiméticas são compostas por uma composição de termos
 exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean temAtributo]
     @init {
         $type = "";
@@ -571,7 +565,7 @@ op_adicao:
     '-'
 ;
 
-//Termo é composto por um ou mais fatores separados por virgula
+//Termo é composto por um ou mais fatores
 termo returns [String type, int indice, String name, boolean temAtributo]
     @init {
         $name = "";
@@ -587,7 +581,6 @@ termo returns [String type, int indice, String name, boolean temAtributo]
 
 
 //outros termos é composto por uma operação de soma ou subtração seguida de um ou mais termos
-//separados por virgula
 outros_termos returns [String type]
     @init {
         $type = "";
@@ -600,7 +593,7 @@ outros_termos returns [String type]
     )*
 ;
 
-
+//Fator é composto por uma composição de parcelas
 fator returns [String type, int indice, String name, boolean temAtributo]
     @init {
         $name = "";
@@ -638,14 +631,9 @@ parcela returns [String type, int indice, String name, int tipo_parcela, boolean
 ;
 
 
-//parcela_unario é composta de um ponteiro (^) seguido de um identificador podendo ou não ter
-//uma dimensão ou
-//um identificador seguido de uma chamada *** ou
-//um número inteiro ou
-//um número real ou
-//uma expressão entre parenteses
-//com o retorno recebido de chamada_partes faz as devidas verificações e em caso
-//de algum problema retorna o erro adequado.
+//parcela_unario é composta de um ponteiro seguido de um identificador que pode ou não ter dimensão ou um identificador
+//seguido de uma chamada ou uma expressão entre parênteses ou até um número que pode ser inteiro ou real
+//o retorno de chamada_partes é usado para as verificações e em caso de algum problema retorna o erro devido.
 parcela_unario returns [String type, int indice, String name, String tipo_parcela_unario, boolean temAtributo]
     @init {
         $type = "";
@@ -685,7 +673,7 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
     }
 ;
 
-
+// Define a parcela não unaria com a composição usando o operador "E"
 parcela_nao_unario returns [String type, String name]
     @init {
         $name = "";
@@ -701,7 +689,7 @@ parcela_nao_unario returns [String type, String name]
     }
 ;
 
-//Composto pela operação modulo seguida de  1+n parcelas.
+//Outras parcelas é composto pela operação modulo seguida de uma ou mais parcelas.
 outras_parcelas:
     ('%' parcela)*;
 
@@ -729,8 +717,7 @@ chamada_partes returns [String id, List<String> tipos, String name, int tipoCham
 ;
 
 
-//Define a expressão relacinal como uma expressão aritimética seguida de um operador opcional ou não.
-//Verifica a compatibilidade.
+//Expressão relacional é composta por uma expressão aritimética seguida de zero ou mais operadores opcionais
 exp_relacional returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
@@ -749,7 +736,7 @@ exp_relacional returns [boolean compativel, String type, String name, boolean te
         }
     }
 ;
-
+// Operador opcional
 op_opcional returns [String type, boolean compativel]
     @init {
         $type = "";
@@ -761,7 +748,7 @@ op_opcional returns [String type, boolean compativel]
     } |
 ;
 
-//Definição das expressões relacionais
+//Expressões relacionais
 op_relacional:
     '=' |
     '<>' |
@@ -771,7 +758,7 @@ op_relacional:
     '<'
     ;
 
-//Expressão é composta por um termo lógico seguido por N termos lógicos
+//Expressão é composta por um termo lógico seguido por um ou vários termos lógicos
 expressao returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
@@ -789,7 +776,7 @@ op_nao:
     'nao' |
  ;
 
-//Um termo lógico é composto por um ou mais fatores lógicos
+//Termo lógico é composto por um ou mais fatores lógicos
 termo_logico returns [boolean compativel, String type, String name, boolean temAtributo]
     @init {
         $name = "";
@@ -803,16 +790,16 @@ termo_logico returns [boolean compativel, String type, String name, boolean temA
     }
 ;
 
-
+// Agrupamento de fatores lógicos com "OU"
 outros_termos_logicos:
     'ou' termo_logico outros_termos_logicos |
 ;
-
+// Agrupamento de fatores lógicos com "E"
 outros_fatores_logicos:
     'e' fator_logico outros_fatores_logicos |
 ;
 
-//fator_logico é uma parecela lógica, negada ou não (pos op_nao leva à vazio)
+//fator_logico é composto de uma parcela lógica que pode ser negada ou não (pos op_nao levando à vazio)
 fator_logico returns [boolean compativel, String type, String name, boolean temAtributo]
     :
     op_nao parcela_logica {
@@ -824,7 +811,7 @@ fator_logico returns [boolean compativel, String type, String name, boolean temA
 ;
 
 
-//Parcela_logica que é verdadeira, falsa ou uma expressão relacional
+//Parcela_logica que que assume valor verdadeiro, falso ou alguma expressão relacional
 parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean temAtributo]
     @init {
         $name = "";
