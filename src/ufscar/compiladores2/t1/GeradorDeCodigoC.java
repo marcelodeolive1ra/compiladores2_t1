@@ -22,6 +22,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         this.codigo_c = "";
     }
 
+    // Método utilizado para realizar testes de geração de código durante o desenvolvimento deste projeto
     public static void testaGeradorDeCodigoC() throws Exception {
         String entrada = "/Users/marcelodeoliveiradasilva/Desktop/LACompiler/casosDeTeste/entrada/13.txt";
 //        String entrada = "/Users/ViniciusBarbosa/Downloads/T2/T2/T2/src/trabalho2/casosDeTeste/entrada/casoDeTeste01.txt";
@@ -409,7 +410,6 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
-    // NÃO REMOVER
     // Este método, embora apenas retorne uma string vazia, é MUITO IMPORTANTE!
     // Ele evita que os argumentos de uma chamada de função ou procedimento não terminem com o texto "null"
     @Override
@@ -430,6 +430,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return mais_expressoes;
     }
 
+    // Método que visita o caso opcional SENAO do comando SE
     @Override
     public String visitSenao_opcional(LAParser.Senao_opcionalContext ctx) {
         if (ctx.comandos() != null) {
@@ -441,6 +442,8 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita chamadas de funções ou procedimentos, adicionando os argumentos dos parâmetros formais,
+    // quando aplicável
     @Override
     public String visitChamada(LAParser.ChamadaContext ctx) {
         this.print("(");
@@ -449,6 +452,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita atribuições de variáveis
     @Override
     public String visitAtribuicao(LAParser.AtribuicaoContext ctx) {
         this.print(this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao()) + " = " +
@@ -456,12 +460,14 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita argumentos opcionais de uma chamada
     @Override
     public String visitArgumentos_opcional(LAParser.Argumentos_opcionalContext ctx) {
         this.print(this.visitExpressao(ctx.expressao()) + this.visitMais_expressao(ctx.mais_expressao()));
         return "";
     }
 
+    // Método que visita casos de seleção para o comando CASO
     @Override
     public String visitSelecao(LAParser.SelecaoContext ctx) {
         this.println("\tcase " + ctx.constantes().numero_intervalo().NUM_INT().getText() + ":");
@@ -472,36 +478,43 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita eventuais outras seleções do comando CASO
     @Override
     public String visitMais_selecao(LAParser.Mais_selecaoContext ctx) {
         return (ctx.selecao() != null) ? this.visitSelecao(ctx.selecao()) : "";
     }
 
+    // Método que visita operadores unários
     @Override
     public String visitOp_unario(LAParser.Op_unarioContext ctx) {
         return ctx.getText();
     }
 
+    // Método que visita expressões aritméticas, que são compostas por termos
     @Override
     public String visitExp_aritmetica(LAParser.Exp_aritmeticaContext ctx) {
         return (ctx != null) ? this.visitTermo(ctx.termo()) + this.visitOutros_termos(ctx.outros_termos()) : "";
     }
 
+    // Método que visita o operador de multiplicação
     @Override
     public String visitOp_multiplicacao(LAParser.Op_multiplicacaoContext ctx) {
         return ctx.getText();
     }
 
+    // Método que visita o operador de adição
     @Override
     public String visitOp_adicao(LAParser.Op_adicaoContext ctx) {
         return ctx.getText();
     }
 
+    // Método que visita um termo de uma expressão aritmética, que é composto de fatores
     @Override
     public String visitTermo(LAParser.TermoContext ctx) {
         return this.visitFator(ctx.fator()) + this.visitOutros_fatores(ctx.outros_fatores());
     }
 
+    // Método que visita eventuais mais termos de uma expressão aritmética
     @Override
     public String visitOutros_termos(LAParser.Outros_termosContext ctx) {
         int i = 0;
@@ -513,11 +526,13 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return outros_termos;
     }
 
+    // Método que visita um fator de uma expressão aritmética, que é composto de parcelas
     @Override
     public String visitFator(LAParser.FatorContext ctx) {
         return this.visitParcela(ctx.parcela()) + this.visitOutras_parcelas(ctx.outras_parcelas());
     }
 
+    // Método que visita eventuais mais fatores de uma expressão aritmética
     @Override
     public String visitOutros_fatores(LAParser.Outros_fatoresContext ctx) {
         int i = 0;
@@ -529,22 +544,28 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return outros_fatores;
     }
 
+    // Método que visita parcelas, que podem ser unárias ou não. No caso das unárias, inclui a visita do operador unário
     @Override
     public String visitParcela(LAParser.ParcelaContext ctx) {
-        return (ctx.tipo_parcela == PARCELA_UNARIO) ? this.visitOp_unario(ctx.op_unario()) + this.visitParcela_unario(ctx.parcela_unario()) :
+        return (ctx.tipo_parcela == PARCELA_UNARIO) ?
+                this.visitOp_unario(ctx.op_unario()) + this.visitParcela_unario(ctx.parcela_unario()) :
                 this.visitParcela_nao_unario(ctx.parcela_nao_unario());
     }
 
+    // Método que visita parcelas com identificadores simples: ponteiros, chamadas de funções, números inteiros,
+    // números reais e expressões
+    // O tipo de chamada identifica se a mesma possui ou não argumentos para eventuais parâmetros formais da função ou
+    // procedimento
     @Override
     public String visitParcela_unario(LAParser.Parcela_unarioContext ctx) {
         if (ctx.tipo_parcela_unario.compareTo("PONTEIRO") == 0) {
             return "* " + ctx.IDENT().getText() + this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
         } else if (ctx.tipo_parcela_unario.compareTo("CHAMADA") == 0) {
             return ctx.IDENT().getText() +
-                    ((ctx.chamada_partes().tipoChamada == 1) ?
+                    ((ctx.chamada_partes().tipo_chamada == 1) ?
                             "(" + this.visitExpressao(ctx.chamada_partes().expressao()) +
                             this.visitMais_expressao(ctx.chamada_partes().mais_expressao()) + ")" :
-                            ((ctx.chamada_partes().tipoChamada == 2)
+                            ((ctx.chamada_partes().tipo_chamada == 2)
                                     ? this.visitOutros_ident(ctx.chamada_partes().outros_ident()) +
                                     this.visitDimensao(ctx.chamada_partes().dimensao()) : ""));
         } else if (ctx.tipo_parcela_unario.compareTo("INTEIRO") == 0) {
@@ -557,12 +578,14 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return "";
     }
 
+    // Método que visita parcelas com identificadores compostos (o caso de registros, por exemplo)
     @Override
     public String visitParcela_nao_unario(LAParser.Parcela_nao_unarioContext ctx) {
         return (ctx.type.compareTo(LITERAL) == 0) ? ctx.CADEIA.getText() : "&" + ctx.IDENT().getText() +
                 this.visitOutros_ident(ctx.outros_ident()) + this.visitDimensao(ctx.dimensao());
     }
 
+    // Método que visita parcelas adicionais de uma operação aritmética de módulo
     @Override
     public String visitOutras_parcelas(LAParser.Outras_parcelasContext ctx) {
         String outras_parcelas = "";
@@ -573,56 +596,68 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
         return outras_parcelas;
     }
 
+    // Método que visita expressões relacionais, que são compostas de expressões aritméticas e operadores relacionais
     @Override
     public String visitExp_relacional(LAParser.Exp_relacionalContext ctx) {
         return this.visitExp_aritmetica(ctx.exp_aritmetica()) + this.visitOp_opcional(ctx.op_opcional());
     }
 
+    // Método que visita operadores relacionais opcionais à expressão (e eventualmente expressões aritméticas, se
+    // houverem dentro da expressão relacional)
     @Override
     public String visitOp_opcional(LAParser.Op_opcionalContext ctx) {
         return this.visitOp_relacional(ctx.op_relacional()) + this.visitExp_aritmetica(ctx.exp_aritmetica());
     }
 
+    // Método que visita um operador relacional e o converte para a notação em C equivalente
     @Override
     public String visitOp_relacional(LAParser.Op_relacionalContext ctx) {
         return (ctx != null) ? (ctx.getText().compareTo("=") == 0 ? " ==" :
                 (ctx.getText().compareTo("<>") == 0) ? " != " : " " + ctx.getText()) + " " : "";
     }
 
+    // Método que visita uma expressão lógica (para o caso de comandos SE, ENQUANTO...)
     @Override
     public String visitExpressao(LAParser.ExpressaoContext ctx) {
         return (ctx != null) ? this.visitTermo_logico(ctx.termo_logico()) +
                 this.visitOutros_termos_logicos(ctx.outros_termos_logicos()) : "";
     }
 
+    // Método que adiciona o operador de negação a uma parcela lógica
     @Override
     public String visitOp_nao(LAParser.Op_naoContext ctx) {
         return (ctx.getText().compareTo("nao") == 0) ? "!" : "";
     }
 
+    // Método que visita um termos lógicos de uma expressão
     @Override
     public String visitTermo_logico(LAParser.Termo_logicoContext ctx) {
         return (ctx != null) ? this.visitFator_logico(ctx.fator_logico()) +
                 this.visitOutros_fatores_logicos(ctx.outros_fatores_logicos()) : "";
     }
 
+    // Método que visita mais termos lógicos, se existirem, concatenado as comparações com o operador relacional OU
     @Override
     public String visitOutros_termos_logicos(LAParser.Outros_termos_logicosContext ctx) {
         return (ctx.termo_logico() != null) ? " || " + this.visitTermo_logico(ctx.termo_logico()) +
                 this.visitOutros_termos_logicos(ctx.outros_termos_logicos()) : "";
     }
 
+    // Método que visita um fator lógico que, se existir, é uma parcela lógica, que pode ou não conter um operador de
+    // negação antes da parcela
     @Override
     public String visitFator_logico(LAParser.Fator_logicoContext ctx) {
         return (ctx != null) ? this.visitOp_nao(ctx.op_nao()) + this.visitParcela_logica(ctx.parcela_logica()) : "";
     }
 
+    // Método que visita mais fatores lógicos, se houverem, concatenando as comparações com o operador relacional E
     @Override
     public String visitOutros_fatores_logicos(LAParser.Outros_fatores_logicosContext ctx) {
         return (ctx.fator_logico() != null) ? " && " + this.visitFator_logico(ctx.fator_logico()) +
                 this.visitOutros_fatores_logicos(ctx.outros_fatores_logicos()) : "";
     }
 
+    // Método que visita uma parcela lógica, se necessário (quando a comparação não é simplesmente com verdadeiro ou falso)
     @Override
     public String visitParcela_logica(LAParser.Parcela_logicaContext ctx) {
         return (ctx.tipo_parcela_logica.compareTo("verdadeiro") == 0) ?
@@ -630,6 +665,7 @@ public class GeradorDeCodigoC extends LABaseVisitor<String> {
                 "false" : this.visitExp_relacional(ctx.exp_relacional()));
     }
 
+    // Método que retorna o código C completo gerado pelo compilador
     @Override
     public String toString() {
         return this.codigo_c;

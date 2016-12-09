@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ufscar.compiladores2.t1;
 
 import java.util.BitSet;
@@ -15,6 +10,8 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+
+// Classe que adiciona no arquivo de saída eventuais erros sintáticos do programa
 
 public class ErrosSintaticosErrorListener implements ANTLRErrorListener {
 

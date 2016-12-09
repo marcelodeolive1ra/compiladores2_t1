@@ -12,6 +12,7 @@ grammar LA;
     private final int PARCELA_NAO_UNARIO = 2;
     private final int LEIA = 1, ESCREVA = 2, SE = 3, CASO = 4, PARA = 5, ENQUANTO = 6, FACA = 7, PONTEIRO = 8,
             CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11;
+    private final int CHAMADA_EXPRESSAO = 1, CHAMADA_IDENTIFICADOR = 2, CHAMADA_VAZIA = 3;
 
     private void stop(String msg) {
         throw new ParseCancellationException(msg);
@@ -94,7 +95,7 @@ ERROR:
 programa
     :
     { pilhaDeTabelas.empilhar(new TabelaDeSimbolos(GLOBAL)); }
-    declaracoes 'algoritmo' corpo 'fim_algoritmo'
+    declaracoes 'algoritmo' corpo 'fim_algoritmo' EOF
 ;
 
 
@@ -106,7 +107,7 @@ declaracoes:
 // Regra que permite a "escolha" do tipo de declaração: local ou global
 decl_local_global
     :
-    declaracao_local |
+    declaracao_local  |
     declaracao_global
 ;
 
@@ -116,11 +117,11 @@ decl_local_global
 // Constantes e tipos são adicionados no topo tabela de símbolos já nesta regra. Variáveis,
 // por outro lado, são adicionadas na tabela de símbolos na regra "variavel", pois na linguagem LA
 // é possível declarar mais de uma variável do mesmo tipo na mesma "linha de declaração".
-declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel]
+declaracao_local returns [int tipo_declaracao, String nome, String tipo_variavel]
     :
     'declare' variavel {
         $tipo_declaracao = VARIAVEL;
-        $name = $variavel.name;
+        $nome = $variavel.nome;
         $tipo_variavel = $variavel.tipo_variavel;
     } |
     'constante' IDENT ':' tipo_basico '=' valor_constante {
@@ -144,12 +145,12 @@ declaracao_local returns [int tipo_declaracao, String name, String tipo_variavel
 // símbolos desde que estas ainda não tenham sido declaradas anteriormente no mesmo escopo. Caso as variáveis já existam
 // um erro semântico será registrado através de um atributo estático da classe ErrosSemanticos.
 // Mais detalhes sobre a classe Pair em http://www.antlr.org/api/Java/org/antlr/v4/runtime/misc/Pair.html
-variavel returns [String name, String tipo_variavel]
+variavel returns [String nome, String tipo_variavel]
     :
     IDENT dimensao mais_var ':' tipo {
-        $name = $IDENT.text;
+        $nome = $IDENT.text;
         $tipo_variavel = $tipo.tipodado;
-        pilhaDeTabelas.verificaVariavelJaExistente(new Pair($IDENT.text, $IDENT.line), $mais_var.nomes, $tipo_variavel);
+        pilhaDeTabelas.verificaVariavelExistente(new Pair($IDENT.text, $IDENT.line), $mais_var.nomes, $tipo_variavel);
     }
 ;
 
@@ -183,9 +184,10 @@ identificador returns [String nome_variavel]
     :
     ponteiros_opcionais IDENT dimensao outros_ident {
         $nome_variavel = $IDENT.text;
-        pilhaDeTabelas.verificaVariavelNaoExistente($IDENT.text, $outros_ident.nome_atributo, $outros_ident.id, $IDENT.line);
+        pilhaDeTabelas.verificaVariavelInexistente($IDENT.text, $outros_ident.nome_atributo, $outros_ident.id, $IDENT.line);
     }
 ;
+
 
 // Regra para tratatamento dos ponteiros, que são opcionais para identificadores.
 // O único retorno é a quantidade de ponteiros a serem adicionados antes do identificador.
@@ -196,6 +198,7 @@ ponteiros_opcionais returns [String ponteiros, int linha]
     :
     ('^' { $ponteiros += "^"; })*
 ;
+
 
 // Regra que permite definir identificadores compostos, com o uso do ponto ".".
 outros_ident returns [String id, String nome_atributo, boolean atributo]
@@ -237,12 +240,13 @@ tipo returns [String tipodado, List<Pair> atributos]
     }
 ;
 
-//mais_ident permite criar um ou mais "identificador" separados por ','
+
+// Regra que permite declarar mais de um identificador do mesmo tipo na mesma linha, separados por vírgula
 mais_ident:
     (',' identificador)*;
 
 
-//Define as palavres reservadas para um tipo basico
+// Regra que define os tipos básicos da linguagem LA
 tipo_basico returns [String tipodado]
     :
     'inteiro' {
@@ -259,7 +263,8 @@ tipo_basico returns [String tipodado]
     }
 ;
 
-//Define um tipo basico ou um identificador e verifica a existencia do tipo que está sendo definido
+
+// Regra que define o identificador do tipo de dado, verificando se o mesmo existe no escopo apropriado
 tipo_basico_ident returns [String tipodado]
     :
     tipo_basico {
@@ -268,12 +273,13 @@ tipo_basico_ident returns [String tipodado]
     IDENT {
         $tipodado = $IDENT.text;
         if (!pilhaDeTabelas.existeTipo($IDENT.text)) {
-            ErrosSemanticos.erroTipoNaoExiste($IDENT.text, $IDENT.line);
+            ErrosSemanticos.tipoInexistente($IDENT.text, $IDENT.line);
         }
     }
 ;
 
-//tipo estendido é um ponteiro seguido de um identificador de tipo básico
+
+// Regra que define um tipo estendido, que é um ponteiro seguido de um identificador de tipo básico
 tipo_estendido returns [String tipodado]
     :
     ponteiros_opcionais tipo_basico_ident {
@@ -281,6 +287,8 @@ tipo_estendido returns [String tipodado]
     }
 ;
 
+
+// Regra que define valores constantes
 valor_constante
     :
     CADEIA |
@@ -289,6 +297,7 @@ valor_constante
     'verdadeiro' |
     'falso'
     ;
+
 
 //Regra que define o formato de um registro, tendo a forma "registro" seguido de uma ou mais variáveis
 registro returns [List<Pair> atributos]
@@ -299,13 +308,16 @@ registro returns [List<Pair> atributos]
     'registro'
     (
         variavel_registro {
-            $atributos.addAll($variavel_registro.atributos);
+            for (Pair atributo: $variavel_registro.atributos) {
+                $atributos.add(atributo);
+            }
         }
     )+
     'fim_registro'
 ;
 
 
+// Regra que define os atributos de um registro (guarda todas as variáveis definidas dentro do registro)
 variavel_registro returns [List<Pair> atributos]
     @init {
         $atributos = new ArrayList<Pair>();
@@ -319,6 +331,8 @@ variavel_registro returns [List<Pair> atributos]
     }
 ;
 
+
+// Regra que permite que sejam adicionados mais atributos a um registro
 mais_var_registro returns [List<String> atributos]
     @init {
         $atributos = new ArrayList<String>();
@@ -332,10 +346,8 @@ mais_var_registro returns [List<String> atributos]
 ;
 
 
-//Regra que define declaração_global sendo composta por "procedimento nome_procedimento (parametros)" seguido de
-//declarações e comandos terminados pela palavra reservada "fim_procedimento" ou
-//composta por "funcao nome_funcao (parametros) :" seguido de um tipo estendido,
-//declarações e comandos sendo terminados por "fim_funcao"
+// Regra que define declarações globais, podendo estas serem procedimentos ou funções, ambas permitindo parâmetros
+// formais, que terão uma nova tabela de símbolos para cuidar do escopo das variáveis adequadamente.
 declaracao_global
     :
     'procedimento' IDENT {
@@ -356,72 +368,82 @@ declaracao_global
 ;
 
 
+// Esta regra permite a adição opcional de parâmetros formais a funções ou procedimentos
 parametros_opcional:
     parametro |
 ;
 
-//Regra que define que parametro deve possuir uma variavel, um ou mais indentificadores
-//e um tipo_estendido seguido dos parametros. Chama a classe funcoes para adicionar um tipodado na tabela de símbolos.
+
+// Regra que define a estrutura de funções, com seu tipo de retorno e parâmetros formais
 parametro:
     var_opcional ident_param mais_id_param ':' tipo_estendido {
-        pilhaDeTabelas.topo().adicionarSimbolo($ident_param.param, $tipo_estendido.tipodado, "parametro");
+        pilhaDeTabelas.topo().adicionarSimbolo($ident_param.nome_parametro, $tipo_estendido.tipodado, "parametro");
         pilhaDeTabelas.topo_funcoes().add($tipo_estendido.tipodado);
     }
     mais_parametros
 ;
 
 
-ident_param returns [String param]:
+// Regra que define um parâmetro em específico, considerando a possibilidade do mesmo ter ponteiros, dimensão e até
+// mesmo identificadores adicionais (formando assim um identificador composto)
+ident_param returns [String nome_parametro]:
     ponteiros_opcionais
     IDENT {
-        $param = $IDENT.text;
+        $nome_parametro = $IDENT.text;
     }
     dimensao
     outros_ident
 ;
 
 
+// Regra que permite a adição de mais parâmetros a uma função ou procedimento, sendo os parâmetros separados por vírgula
 mais_id_param:
     (',' ident_param)*
 ;
 
 
+// Regra que permite a passagem de parâmetros por referência
 var_opcional:
     'var' |
 ;
 
+
+// Regra auxiliar para adição de mais parâmetros em um procedimento ou função
 mais_parametros:
     ',' parametro |
 ;
 
 
+// Regra para definição de declarações locais (variáveis)
 declaracoes_locais:
     declaracao_local*;
 
+
+// Regra que define o corpo do programa, sendo este composto por uma série de declarações locais seguidas de comandos
 corpo:
     declaracoes_locais comandos;
 
-//Regra que define que os commandos devem ter ao menos uma instrução
+
+// Regra que define comandos individuais do corpo do programa
 comandos:
     cmd*;
 
 
-//Regra principal de definição de instruções da linguagem LA
-//Realiza verificações de formato e contexto para realizar as atribuições,
-// retornando os erros devidos quando existirem falhas
+// Regra que define os comandos, fazendo as devidas verificações semânticas, quando necessário
 cmd returns [int tipo_comando, String nome_variavel,  String tipo_variavel]
     @id {
         $nome_variavel = "";
         $tipo_variavel = "";
     }
-    : 'leia' '(' identificador mais_ident ')' {
+    :
+    'leia' '(' identificador mais_ident ')' {
         $tipo_comando = LEIA;
         $nome_variavel = $identificador.nome_variavel;
         $tipo_variavel = pilhaDeTabelas.getTipoDoSimbolo($identificador.nome_variavel);
     } |
     'escreva' '(' expressao mais_expressao ')' {
         $tipo_comando = ESCREVA;
-        $nome_variavel = $expressao.name;
+        $nome_variavel = $expressao.nome;
         $tipo_variavel = $expressao.type;
     } |
     'se' expressao 'entao' comandos senao_opcional 'fim_se' {
@@ -450,17 +472,17 @@ cmd returns [int tipo_comando, String nome_variavel,  String tipo_variavel]
     IDENT atribuicao {
         $tipo_comando = ATRIBUICAO;
         pilhaDeTabelas.verificaCompatibilidadeDeAtribuicao($atribuicao.compativel, $atribuicao.type, $IDENT.text,
-            $atribuicao.name, $atribuicao.indice, $IDENT.line);
+            $atribuicao.nome, $atribuicao.indice, $IDENT.line);
     } |
     retorne = 'retorne' expressao {
         $tipo_comando = RETORNE;
         if (!pilhaDeTabelas.topo().getType().equals("funcao")) {
-            ErrosSemanticos.escopoNaoPermitido($retorne.line);
+            ErrosSemanticos.escopoInvalido($retorne.line);
         }
     }
 ;
 
-//Permite que exista mais de uma expressão
+// Regra que permite a adição de mais expressões a uma expressão
 mais_expressao returns [List<String> tipos]
     @init {
         $tipos = new ArrayList<String>();
@@ -474,22 +496,25 @@ mais_expressao returns [List<String> tipos]
 ;
 
 
+// Regra que define o caso SENAO do comando SE
 senao_opcional:
     'senao' comandos |
 ;
 
-//chamada de atribuição pode ser composta por argumentos opcionais entre parenteses ou por um ou mais identificadores
-// podendo ou não serem mais dimensões seguidos de "<-" expressão
+
+// Regra que define chamadas de funções ou procedimentos, incluindo os argumentos para os parâmetros formais,
+// quando existerem
 chamada:
     '(' argumentos_opcional ')'
 ;
 
-//Regra para definir atribuição, setando valores das variaveis compatíveis (String, indice e name) que
-// são retornadas para a funcão cmd.
-atribuicao returns [boolean compativel, String type, int indice, String name]
+
+// Regra que permite a atribuição de variáveis, fazendo as devidas checagens de compatibilidade de tipo, quando
+// necessário
+atribuicao returns [boolean compativel, String type, int indice, String nome]
     @init {
         $type = "";
-        $name = "";
+        $nome = "";
     }
     :
     outros_ident dimensao '<-' expressao {
@@ -497,54 +522,68 @@ atribuicao returns [boolean compativel, String type, int indice, String name]
         $indice = $dimensao.indice;
 
         if ($outros_ident.nome_atributo.compareTo("") == 0) {
-            $name = ($expressao.atributo && $expressao.name.compareTo("") != 0) ? $expressao.name : $name;
-            $compativel = ($expressao.name.compareTo("") == 0) ? $expressao.compativel : false;
-            $type = ($expressao.name.compareTo("") == 0) ? $expressao.type : $type;
+            $nome = ($expressao.atributo && $expressao.nome.compareTo("") != 0) ? $expressao.nome : $nome;
+            $compativel = ($expressao.nome.compareTo("") == 0) ? $expressao.compativel : false;
+            $type = ($expressao.nome.compareTo("") == 0) ? $expressao.type : $type;
         } else {
-            $name = $outros_ident.nome_atributo;
+            $nome = $outros_ident.nome_atributo;
         }
     }
 ;
 
 
+// Regra que define argumentos opcionais como sendo uma ou mais expressões
 argumentos_opcional:
     expressao mais_expressao |
 ;
 
+
+// Regra que define um CASO do comando ESCOLHA
 selecao:
     constantes ':' comandos mais_selecao;
 
+
+// Regra que permite a adição de mais CASOS ao comando ESCOLHA
 mais_selecao:
     selecao |
 ;
 
+
+// Regra que define constantes
 constantes:
     numero_intervalo mais_constantes;
 
+
+// Regra que permite mais constantes em uma mesma linha, separadas por vírgula
 mais_constantes:
     ',' constantes |
 ;
 
+// Regra que define intervalos, para a estrutura CASO do comando ESCOLHA
 numero_intervalo:
     op_unario NUM_INT intervalo_opcional;
 
+
+// Regra que define um intervalo opcional para a estrutura CASO
 intervalo_opcional:
     '..' op_unario NUM_INT |
 ;
 
+// Regra que define o operador unário de negativo
 op_unario:
     '-' |
 ;
 
-//Expressẽos aritiméticas são compostas por um ou mais termos separados por virgulas
-exp_aritmetica returns [boolean compativel, String type, int indice, String name, boolean atributo]
+
+// Regra que define expressões aritméticas
+exp_aritmetica returns [boolean compativel, String type, int indice, String nome, boolean atributo]
     @init {
         $type = "";
-        $name = "";
+        $nome = "";
     }
     :
     termo outros_termos {
-        $name = $termo.name;
+        $nome = $termo.nome;
         $atributo = $termo.atributo;
 
         if (!$outros_termos.type.equals("") && !$termo.type.equals($outros_termos.type)) {
@@ -557,32 +596,36 @@ exp_aritmetica returns [boolean compativel, String type, int indice, String name
 ;
 
 
+// Regra que define operadores aritméticos com a mesma ordem de precedência da multiplicação
 op_multiplicacao:
     '*' |
     '/'
 ;
 
+
+// Regra que define operadores aritméticos com a mesma ordem de precedência da adição
 op_adicao:
     '+' |
     '-'
 ;
 
-//Termo é composto por um ou mais fatores separados por virgula
-termo returns [String type, int indice, String name, boolean atributo]
+
+// Regra que define termos, que são parte de expressões aritméticas
+termo returns [String type, int indice, String nome, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     fator outros_fatores {
         $type = $fator.type;
         $indice = $fator.indice;
-        $name = $fator.name;
+        $nome = $fator.nome;
         $atributo = $fator.atributo;
     }
 ;
 
 
-//outros termos é composto por uma operação de soma ou subtração seguida de um ou mais termos
+// Regra que permite eventuais mais termos em uma expressão aritmética
 outros_termos returns [String type]
     @init {
         $type = "";
@@ -595,35 +638,38 @@ outros_termos returns [String type]
     )*
 ;
 
-//Fator é composto por uma composição de parcelas
-fator returns [String type, int indice, String name, boolean atributo]
+
+// Regra que define fatores, que são parte de termos, que por sua vez, compõem uma expressão aritmética
+fator returns [String type, int indice, String nome, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     parcela outras_parcelas {
         $type = $parcela.type;
         $indice = $parcela.indice;
-        $name = $parcela.name;
+        $nome = $parcela.nome;
         $atributo = $parcela.atributo;
     }
 ;
 
 
-//outros fatores é composto por operações de multiplicação ou divisão e um ou mais fatores separados
+// Regra que permite o agrupamento de mais fatores com um operador aritmético de mesma ordem de precedência
 outros_fatores:
     (op_multiplicacao fator)*;
 
-parcela returns [String type, int indice, String name, int tipo_parcela, boolean atributo]
+
+// Regra que define parcelas (unárias ou não) de expressões aritméticas
+parcela returns [String type, int indice, String nome, int tipo_parcela, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     op_unario parcela_unario {
         $tipo_parcela = PARCELA_UNARIO;
         $type = $parcela_unario.type;
         $indice = $parcela_unario.indice;
-        $name = $parcela_unario.name;
+        $nome = $parcela_unario.nome;
         $atributo = $parcela_unario.atributo;
     } |
     parcela_nao_unario {
@@ -633,14 +679,12 @@ parcela returns [String type, int indice, String name, int tipo_parcela, boolean
 ;
 
 
-//parcela_unario é composta de um ponteiro seguido de um identificador que pode ou não ter dimensão ou um identificador
-//seguido de uma chamada ou uma expressão entre parênteses ou até um número que pode ser inteiro ou real
-//o retorno de chamada_partes é usado para as verificações e em caso de algum problema retorna o erro devido.
-parcela_unario returns [String type, int indice, String name, String tipo_parcela_unario, boolean atributo]
+// Regra que define parcelas unárias, fazendo as devidas checagens semânticas quando apropriado
+parcela_unario returns [String type, int indice, String nome, String tipo_parcela_unario, boolean atributo]
     @init {
         $type = "";
         $indice = -1;
-        $name = "";
+        $nome = "";
     }
     :
     '^' IDENT outros_ident dimensao {
@@ -651,82 +695,86 @@ parcela_unario returns [String type, int indice, String name, String tipo_parcel
         $tipo_parcela_unario = "CHAMADA";
 
         if (!pilhaDeTabelas.existeSimbolo($IDENT.text)) {
-            ErrosSemanticos.erroVariavelNaoExiste($IDENT.text+$chamada_partes.id, $IDENT.line);
+            ErrosSemanticos.identificadorInexistente($IDENT.text + $chamada_partes.id, $IDENT.line);
         }
 
         $type = pilhaDeTabelas.getTipoDoSimbolo($IDENT.text);
         pilhaDeTabelas.verificaCompatibilidadeDeParametros($chamada_partes.tipos, $IDENT.text, $IDENT.line);
-        $name = $chamada_partes.name;;
+        $nome = $chamada_partes.nome;;
         $atributo = $chamada_partes.atributo;
     } |
     NUM_INT {
         $tipo_parcela_unario = "INTEIRO";
         $type = "inteiro";
         $indice = Integer.parseInt($NUM_INT.text);
-        $name = $NUM_INT.text;
+        $nome = $NUM_INT.text;
     } |
     NUM_REAL {
         $tipo_parcela_unario = "REAL";
         $type = "real";
-        $name = $NUM_REAL.text;
+        $nome = $NUM_REAL.text;
     } |
     '(' expressao ')' {
         $tipo_parcela_unario = "EXPRESSAO";
     }
 ;
 
-// Define a parcela não unaria com a composição usando o operador "E"
-parcela_nao_unario returns [String type, String name]
+
+// Regra que define parcelas não unárias. O agrupamento de parcelas unárias é feito com o operador lógico E.
+parcela_nao_unario returns [String type, String nome]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     '&' IDENT outros_ident dimensao {
         $type = "";
-        $name = $outros_ident.nome_atributo;
+        $nome = $outros_ident.nome_atributo;
     } |
     CADEIA {
         $type = "literal";
-        $name = $CADEIA.text;
+        $nome = $CADEIA.text;
     }
 ;
 
-//Outras parcelas é composto pela operação modulo seguida de uma ou mais parcelas.
+
+// Regra que define outras parcelas da operação de módulo
 outras_parcelas:
     ('%' parcela)*;
 
 
-chamada_partes returns [String id, List<String> tipos, String name, int tipoChamada, boolean atributo]
+// Regra que define tipos de chamadas de funções ou procedimentos (com ou sem parâmetros, e caso sejam com parâmetros,
+// se os parâmetros são expressões aritméticas ou identificadores)
+chamada_partes returns [String id, List<String> tipos, String nome, int tipo_chamada, boolean atributo]
     @init {
         $id = "";
         $tipos = new ArrayList<String>();
-        $name = "";
+        $nome = "";
     }
     :
     '(' expressao mais_expressao {
         $tipos = $mais_expressao.tipos;
         $tipos.add($expressao.type);
-        $tipoChamada = 1;
+        $tipo_chamada = CHAMADA_EXPRESSAO;
     }
     ')' |
     outros_ident dimensao {
         $id = $outros_ident.id;
-        $name = $outros_ident.nome_atributo;
+        $nome = $outros_ident.nome_atributo;
         $atributo = $outros_ident.atributo;
-        $tipoChamada = 2;
+        $tipo_chamada = CHAMADA_IDENTIFICADOR;
     } |
-    { $tipoChamada = 3; }
+    { $tipo_chamada = CHAMADA_VAZIA; }
 ;
 
 
-//Expressão relacional é composta por uma expressão aritimética seguida de zero ou mais operadores opcionais
-exp_relacional returns [boolean compativel, String type, String name, boolean atributo]
+// Regra que define expressões relacionais (com variáveis que auxiliam a verificação de sua compatibilidade)
+exp_relacional returns [boolean compativel, String type, String nome, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     exp_aritmetica op_opcional {
-        $name = $exp_aritmetica.name;
+        $nome = $exp_aritmetica.nome;
         $atributo = $exp_aritmetica.atributo;
 
         if ($op_opcional.type.equals("")) {
@@ -739,7 +787,8 @@ exp_relacional returns [boolean compativel, String type, String name, boolean at
     }
 ;
 
-// Operador opcional
+
+// Regra que define operadores opcionais em uma expressão relacional
 op_opcional returns [String type, boolean compativel]
     @init {
         $type = "";
@@ -751,7 +800,8 @@ op_opcional returns [String type, boolean compativel]
     } |
 ;
 
-//Expressões relacionais
+
+// Regra que define os operadores relacionais aceitos na linguagem
 op_relacional:
     '=' |
     '<>' |
@@ -761,63 +811,71 @@ op_relacional:
     '<'
     ;
 
-//Expressão é composta por um termo lógico seguido por um ou vários termos lógicos
-expressao returns [boolean compativel, String type, String name, boolean atributo]
+
+// Regra que define expressões lógicas (a serem usadas em operações relacionais)
+expressao returns [boolean compativel, String type, String nome, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     termo_logico outros_termos_logicos {
         $compativel = $termo_logico.compativel;
         $type = $termo_logico.type;
-        $name = $termo_logico.name;
+        $nome = $termo_logico.nome;
         $atributo = $termo_logico.atributo;
     }
 ;
 
+
+// Regra que define o operador unário de negação
 op_nao:
     'nao' |
- ;
+;
 
-//Um termo lógico é composto por um ou mais fatores lógicos
-termo_logico returns [boolean compativel, String type, String name, boolean atributo]
+
+//Regra que define um termo lógico como sendo a composição de fatores lógicos
+termo_logico returns [boolean compativel, String type, String nome, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     fator_logico outros_fatores_logicos {
         $compativel = $fator_logico.compativel;
         $type = $fator_logico.type;
-        $name = $fator_logico.name;
+        $nome = $fator_logico.nome;
         $atributo = $fator_logico.atributo;
     }
 ;
 
-// Agrupamento de fatores lógicos com "OU"
+
+// Regra que define termos lógicos adicionais, agrupando-os com o operador lógico OU
 outros_termos_logicos:
     'ou' termo_logico outros_termos_logicos |
 ;
-// Agrupamento de fatores lógicos com "E"
+
+
+// Regra que define fatores lógicos adicionais, agrupando-os com o operador lógico E
 outros_fatores_logicos:
     'e' fator_logico outros_fatores_logicos |
 ;
 
-//fator_logico é uma parecela lógica, negada ou não (pos op_nao leva à vazio)
-fator_logico returns [boolean compativel, String type, String name, boolean atributo]
+
+// Regra que define um fator lógico, que faz parte de um termo lógico
+fator_logico returns [boolean compativel, String type, String nome, boolean atributo]
     :
     op_nao parcela_logica {
         $compativel = $parcela_logica.compativel;
         $type = $parcela_logica.tipo_parcela_logica;
-        $name = $parcela_logica.name;
+        $nome = $parcela_logica.nome;
         $atributo = $parcela_logica.atributo;
     }
 ;
 
 
-//Parcela_logica que é verdadeira, falsa ou uma expressão relacional
-parcela_logica returns [String tipo_parcela_logica, String name, boolean compativel, boolean atributo]
+// Regra que define uma parcela lógica de uma expressão relacional
+parcela_logica returns [String tipo_parcela_logica, String nome, boolean compativel, boolean atributo]
     @init {
-        $name = "";
+        $nome = "";
     }
     :
     'verdadeiro' {
@@ -829,7 +887,7 @@ parcela_logica returns [String tipo_parcela_logica, String name, boolean compati
     exp_relacional {
         $tipo_parcela_logica = $exp_relacional.type;
         $compativel = $exp_relacional.compativel;
-        $name = $exp_relacional.name;
+        $nome = $exp_relacional.nome;
         $atributo = $exp_relacional.atributo;
     }
 ;

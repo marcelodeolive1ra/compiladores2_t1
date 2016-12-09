@@ -105,7 +105,7 @@ public class PilhaDeTabelas {
             }
         }
         if (!compativel) {
-            ErrosSemanticos.erroIncompatibilidadeParametros(nome_funcao, linha);
+            ErrosSemanticos.parametrosIncompativeis(nome_funcao, linha);
         }
     }
 
@@ -113,47 +113,47 @@ public class PilhaDeTabelas {
         String tipo_variavel = this.getTipoDoSimbolo(nome_variavel).replace("^", "");
 
         if (tipo_variavel.compareTo(tipo_expressao) != 0) {
-            ErrosSemanticos.erroVariavelNaoCompativel("^" + nome_variavel, linha);
+            ErrosSemanticos.atribuicaoIncompativel("^" + nome_variavel, linha);
         }
     }
 
     public void verificaCompatibilidadeDeAtribuicao(boolean compativel, String tipo, String variavel, String atributo, int indice, int linha) {
         if (!this.existeSimbolo(variavel)) {
-            ErrosSemanticos.erroVariavelNaoExiste(variavel, linha);
+            ErrosSemanticos.identificadorInexistente(variavel, linha);
         } else if (!compativel && !tipo.equals("") && !this.getTipoDoSimbolo(variavel).equals(tipo)) {
             if (!(this.getTipoDoSimbolo(variavel).equals("real") && tipo.equals("inteiro"))) {
                 if (indice != -1) {
-                      ErrosSemanticos.erroVariavelNaoCompativel(variavel + "[" + indice + "]", linha);
+                      ErrosSemanticos.atribuicaoIncompativel(variavel + "[" + indice + "]", linha);
                 } else if (!atributo.equals("")) {
                      if (!this.getTipoDoAtributo(atributo).equals(tipo)) {
                         if (!(this.getTipoDoAtributo(atributo).equals("real") && tipo.equals("inteiro"))) {
                             if (!this.getTipoDoAtributo(atributo).equals(this.getTipoDoSimbolo(variavel))) {
-                                ErrosSemanticos.erroVariavelNaoCompativel(variavel + "." + atributo, linha);
+                                ErrosSemanticos.atribuicaoIncompativel(variavel + "." + atributo, linha);
                             }
                         }
                      }
                 } else {
-                      ErrosSemanticos.erroVariavelNaoCompativel(variavel, linha);
+                      ErrosSemanticos.atribuicaoIncompativel(variavel, linha);
                 }
             }
         }
     }
 
-    public void verificaVariavelNaoExistente(String variavel, String nome_atributo, String id_atributo, int linha) {
+    public void verificaVariavelInexistente(String variavel, String nome_atributo, String id_atributo, int linha) {
         if (!this.existeSimbolo(variavel)) {
-            ErrosSemanticos.erroVariavelNaoExiste(variavel, linha);
+            ErrosSemanticos.identificadorInexistente(variavel, linha);
         } else if (id_atributo.compareTo("") != 0) {
             if (!this.existeAtributo(this.getTipoDaVariavel(variavel), nome_atributo)) {
-                ErrosSemanticos.erroVariavelNaoExiste(variavel + id_atributo, linha);
+                ErrosSemanticos.identificadorInexistente(variavel + id_atributo, linha);
             }
         }
     }
 
-    public void verificaVariavelJaExistente(Pair primeira_variavel, List<Pair> variaveis, String tipo_variavel) {
+    public void verificaVariavelExistente(Pair primeira_variavel, List<Pair> variaveis, String tipo_variavel) {
         variaveis.add(primeira_variavel);
         for (Pair variavel: variaveis) {
             if (this.existeSimbolo(variavel.a.toString())) {
-                ErrosSemanticos.erroVariavelJaExiste(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
+                ErrosSemanticos.identificadorExistente(variavel.a.toString(), Integer.parseInt(variavel.b.toString()));
             } else {
                 this.topo().adicionarSimbolo(variavel.a.toString(), tipo_variavel, "variavel");
             }
@@ -192,8 +192,8 @@ public class PilhaDeTabelas {
     }
 
     public boolean existeTipo(String tipo) {
-        for (String t : tipos.keySet()) {
-            if (t.equals(tipo))
+        for (String _tipo : tipos.keySet()) {
+            if (_tipo.equals(tipo))
                 return true;
         }
         return false;

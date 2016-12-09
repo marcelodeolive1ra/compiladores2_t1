@@ -107,6 +107,7 @@ public class LALexer extends Lexer {
 	    private final int PARCELA_NAO_UNARIO = 2;
 	    private final int LEIA = 1, ESCREVA = 2, SE = 3, CASO = 4, PARA = 5, ENQUANTO = 6, FACA = 7, PONTEIRO = 8,
 	            CHAMADA = 9, ATRIBUICAO = 10, RETORNE = 11;
+	    private final int CHAMADA_EXPRESSAO = 1, CHAMADA_IDENTIFICADOR = 2, CHAMADA_VAZIA = 3;
 
 	    private void stop(String msg) {
 	        throw new ParseCancellationException(msg);
